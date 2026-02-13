@@ -5,11 +5,11 @@ import icon from '../../resources/icon.png?asset'
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
-    width: 1200,
+    width: 1000,
     height: 800,
     minWidth: 900,
     minHeight: 600,
-    fullscreen: true,
+    fullscreen: false,
     show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
