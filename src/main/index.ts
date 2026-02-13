@@ -5,11 +5,11 @@ import icon from '../../resources/icon.png?asset'
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    minWidth: 900,
-    minHeight: 600,
-    fullscreen: true,
+    width: 1440,
+    height: 900,
+    minWidth: 1200,
+    minHeight: 700,
+    fullscreen: false,
     show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
@@ -20,7 +20,12 @@ function createWindow(): void {
   })
 
   mainWindow.on('ready-to-show', () => {
+    mainWindow.maximize()
     mainWindow.show()
+  })
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow.webContents.setZoomFactor(1)
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -29,6 +34,7 @@ function createWindow(): void {
   })
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+    void mainWindow.webContents.session.clearCache()
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
@@ -57,4 +63,3 @@ app.on('window-all-closed', () => {
     app.quit()
   }
 })
-
