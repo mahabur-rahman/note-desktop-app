@@ -27,11 +27,6 @@ export function AppChrome({
     <main className={`shell-root ${mode === 'light' ? 'theme-light' : 'theme-dark'}`}>
       <div className="desktop-window">
         <header className="window-titlebar">
-          <div className="traffic-dots">
-            <span className="dot dot-red" />
-            <span className="dot dot-yellow" />
-            <span className="dot dot-green" />
-          </div>
           <h1 className="window-title">{title}</h1>
           <div className="window-actions">
             <button className="window-chip" onClick={onToggleMode} type="button">

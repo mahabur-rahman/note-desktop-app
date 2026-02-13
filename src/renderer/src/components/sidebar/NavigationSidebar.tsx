@@ -39,37 +39,39 @@ export function NavigationSidebar({
 }: NavigationSidebarProps): React.JSX.Element {
   return (
     <aside className="column-sidebar">
-      <div className="section-head">Notebooks</div>
+      <div className="sidebar-main">
+        <div className="section-head">Notebooks</div>
 
-      <ul className="sidebar-list">
-        {notebooks.map((notebook) => {
-          const Icon = notebookIcon[notebook.icon] ?? FiFileText
-          return (
-            <li key={notebook.id}>
-              <button
-                type="button"
-                className={`sidebar-item ${activeNotebookId === notebook.id ? 'sidebar-item-active' : ''}`}
-                onClick={() => onNotebookChange(notebook.id)}
-              >
-                <span className="sidebar-icon">
-                  <Icon aria-hidden />
-                </span>
-                <span>{notebook.label}</span>
-              </button>
-            </li>
-          )
-        })}
-      </ul>
+        <ul className="sidebar-list">
+          {notebooks.map((notebook) => {
+            const Icon = notebookIcon[notebook.icon] ?? FiFileText
+            return (
+              <li key={notebook.id}>
+                <button
+                  type="button"
+                  className={`sidebar-item ${activeNotebookId === notebook.id ? 'sidebar-item-active' : ''}`}
+                  onClick={() => onNotebookChange(notebook.id)}
+                >
+                  <span className="sidebar-icon">
+                    <Icon aria-hidden />
+                  </span>
+                  <span>{notebook.label}</span>
+                </button>
+              </li>
+            )
+          })}
+        </ul>
 
-      <div className="section-divider" />
-      <div className="section-head">Tags</div>
-      <div className="tag-cloud">
-        {tags.map((tag) => (
-          <button key={tag.id} type="button" className="sidebar-tag">
-            <span className="tag-dot" style={{ backgroundColor: tag.color }} />
-            <span>{tag.label}</span>
-          </button>
-        ))}
+        <div className="section-divider" />
+        <div className="section-head">Tags</div>
+        <div className="tag-cloud">
+          {tags.map((tag) => (
+            <button key={tag.id} type="button" className="sidebar-tag">
+              <span className="tag-dot" style={{ backgroundColor: tag.color }} />
+              <span>{tag.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="section-divider" />
