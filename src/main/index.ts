@@ -5,10 +5,10 @@ import icon from '../../resources/icon.png?asset'
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
-    width: 1000,
-    height: 800,
-    minWidth: 900,
-    minHeight: 600,
+    width: 1440,
+    height: 900,
+    minWidth: 1200,
+    minHeight: 700,
     fullscreen: false,
     show: false,
     autoHideMenuBar: true,
@@ -20,7 +20,12 @@ function createWindow(): void {
   })
 
   mainWindow.on('ready-to-show', () => {
+    mainWindow.maximize()
     mainWindow.show()
+  })
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    mainWindow.webContents.setZoomFactor(1)
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -57,4 +62,3 @@ app.on('window-all-closed', () => {
     app.quit()
   }
 })
-
