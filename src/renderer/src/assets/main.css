@@ -448,6 +448,42 @@ body {
   padding-right: 4px;
 }
 
+.notes-empty {
+  border: 1px dashed var(--line-strong);
+  border-radius: 10px;
+  padding: 16px 12px;
+  margin-top: 6px;
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+}
+
+.notes-empty p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.notes-empty button {
+  border: 1px solid var(--line-strong);
+  background: #fff;
+  color: var(--text-main);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 10px;
+}
+
+.theme-dark .notes-empty {
+  border-color: rgba(102, 115, 149, 0.45);
+}
+
+.theme-dark .notes-empty button {
+  border-color: rgba(102, 115, 149, 0.45);
+  background: rgba(30, 38, 59, 0.9);
+  color: #d8e1fa;
+}
+
 .recent-note {
   width: 100%;
   text-align: left;
@@ -704,13 +740,39 @@ body {
 .attachment {
   font-size: 13px;
   color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.theme-dark .attachment {
+  color: #9eadcf;
+}
+
+.attachment-label {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.theme-dark .attachment {
-  color: #9eadcf;
+.save-status {
+  font-size: 12px;
+  font-weight: 600;
+  color: #2f7d46;
+  white-space: nowrap;
+}
+
+.save-status-dirty {
+  color: #b26a00;
+}
+
+.theme-dark .save-status {
+  color: #8fdeb0;
+}
+
+.theme-dark .save-status-dirty {
+  color: #f5c46e;
 }
 
 .footer-actions {
@@ -742,6 +804,18 @@ body {
   background: var(--brand);
   border-color: var(--brand);
   color: #fff;
+}
+
+.footer-actions .footer-btn-danger {
+  border-color: #de6c6c;
+  background: #fff1f1;
+  color: #a43030;
+}
+
+.theme-dark .footer-actions .footer-btn-danger {
+  border-color: #a54e4e;
+  background: rgba(106, 45, 45, 0.35);
+  color: #f7b5b5;
 }
 
 .empty-state {

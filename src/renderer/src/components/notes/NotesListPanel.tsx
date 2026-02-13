@@ -7,6 +7,7 @@ interface NotesListPanelProps {
   notes: NoteItem[]
   activeNoteId: string
   onNoteSelect: (noteId: string) => void
+  onCreateNote: () => void
 }
 
 export function NotesListPanel({
@@ -14,7 +15,8 @@ export function NotesListPanel({
   onSearchQueryChange,
   notes,
   activeNoteId,
-  onNoteSelect
+  onNoteSelect,
+  onCreateNote
 }: NotesListPanelProps): React.JSX.Element {
   return (
     <section className="column-list">
@@ -32,27 +34,36 @@ export function NotesListPanel({
 
       <div className="recent-head">
         <h2>Recent Notes</h2>
-        <button type="button">
+        <button type="button" onClick={onCreateNote}>
           <FiEdit2 aria-hidden />
-          <span>Edit</span>
+          <span>New</span>
         </button>
       </div>
 
       <div className="notes-scroll">
-        {notes.map((note) => (
-          <button
-            key={note.id}
-            type="button"
-            onClick={() => onNoteSelect(note.id)}
-            className={`recent-note ${note.id === activeNoteId ? 'recent-note-active' : ''}`}
-          >
-            <div className="recent-note-row">
-              <strong>{note.title}</strong>
-              <span>{note.updatedAt}</span>
-            </div>
-            <p>{note.excerpt}</p>
-          </button>
-        ))}
+        {notes.length === 0 ? (
+          <div className="notes-empty">
+            <p>No notes found</p>
+            <button type="button" onClick={onCreateNote}>
+              Create note
+            </button>
+          </div>
+        ) : (
+          notes.map((note) => (
+            <button
+              key={note.id}
+              type="button"
+              onClick={() => onNoteSelect(note.id)}
+              className={`recent-note ${note.id === activeNoteId ? 'recent-note-active' : ''}`}
+            >
+              <div className="recent-note-row">
+                <strong>{note.title}</strong>
+                <span>{note.updatedAt}</span>
+              </div>
+              <p>{note.excerpt}</p>
+            </button>
+          ))
+        )}
       </div>
     </section>
   )
