@@ -15,12 +15,80 @@ const formatUpdatedAt = (): string =>
     month: 'short'
   }).format(new Date())
 
-const buildExcerpt = (content: string): string =>
+const escapeHtml = (value: string): string =>
+  value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+
+const markdownToHtmlLite = (markdown: string): string => {
+  const lines = markdown.split('\n')
+  const blocks: string[] = []
+  let listType: 'ul' | 'ol' | null = null
+
+  const closeList = (): void => {
+    if (!listType) return
+    blocks.push(`</${listType}>`)
+    listType = null
+  }
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim()
+
+    if (line.length === 0) {
+      closeList()
+      continue
+    }
+
+    const headingMatch = line.match(/^(#{1,3})\s+(.+)$/)
+    if (headingMatch) {
+      closeList()
+      const level = headingMatch[1].length
+      blocks.push(`<h${level}>${escapeHtml(headingMatch[2])}</h${level}>`)
+      continue
+    }
+
+    const bulletMatch = line.match(/^-\s+(.+)$/)
+    if (bulletMatch) {
+      if (listType !== 'ul') {
+        closeList()
+        listType = 'ul'
+        blocks.push('<ul>')
+      }
+      blocks.push(`<li>${escapeHtml(bulletMatch[1])}</li>`)
+      continue
+    }
+
+    const orderedMatch = line.match(/^\d+\.\s+(.+)$/)
+    if (orderedMatch) {
+      if (listType !== 'ol') {
+        closeList()
+        listType = 'ol'
+        blocks.push('<ol>')
+      }
+      blocks.push(`<li>${escapeHtml(orderedMatch[1])}</li>`)
+      continue
+    }
+
+    closeList()
+    blocks.push(`<p>${escapeHtml(line)}</p>`)
+  }
+
+  closeList()
+  return blocks.length > 0 ? blocks.join('') : '<p></p>'
+}
+
+const normalizeRichContent = (content: string): string => {
+  const hasHtmlTag = /<[^>]+>/.test(content)
+  return hasHtmlTag ? content : markdownToHtmlLite(content)
+}
+
+const extractPlainText = (content: string): string =>
   content
-    .replaceAll('#', '')
+    .replace(/<[^>]*>/g, ' ')
+    .replaceAll('&nbsp;', ' ')
     .replace(/\s+/g, ' ')
     .trim()
-    .slice(0, 80) || 'Empty note'
+
+const buildExcerpt = (content: string): string =>
+  extractPlainText(content).slice(0, 80) || 'Empty note'
 
 const getCreateNotebookId = (activeNotebookId: string): string => {
   if (activeNotebookId === 'all-notes' || activeNotebookId === 'favorites' || activeNotebookId === 'trash') {
@@ -33,7 +101,7 @@ const createNote = (notebookId: string, favorite: boolean): NoteItem => ({
   id: `note-${nanoid(10)}`,
   title: 'Untitled note',
   excerpt: 'Start writing your note...',
-  content: '# Untitled note\n\n',
+  content: '<h1>Untitled note</h1><p>Start writing...</p>',
   updatedAt: formatUpdatedAt(),
   notebookId,
   tagIds: [],
@@ -65,7 +133,15 @@ const loadInitialNotes = (): NoteItem[] => {
     const parsed: unknown = JSON.parse(raw)
     if (!Array.isArray(parsed)) return fakeNotes
 
-    const validNotes = parsed.filter(isNoteItem)
+    const validNotes = parsed.filter(isNoteItem).map((note) => {
+      const normalizedContent = normalizeRichContent(note.content)
+      return {
+        ...note,
+        content: normalizedContent,
+        excerpt: buildExcerpt(normalizedContent)
+      }
+    })
+
     return validNotes.length > 0 ? validNotes : fakeNotes
   } catch {
     return fakeNotes
@@ -94,7 +170,7 @@ function App(): React.JSX.Element {
             ? note.favorite
             : note.notebookId === activeNotebookId
 
-      const text = `${note.title} ${note.excerpt} ${note.content}`.toLowerCase()
+      const text = `${note.title} ${note.excerpt} ${extractPlainText(note.content)}`.toLowerCase()
       const queryMatch = query.length === 0 ? true : text.includes(query)
 
       return notebookMatch && queryMatch

@@ -654,63 +654,68 @@ body {
   border-color: var(--line-strong);
 }
 
+.editor-toolbar button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .editor-toolbar svg {
   width: 15px;
   height: 15px;
 }
 
-.editor-textarea-v2 {
-  border: 0;
-  outline: none;
-  padding: 14px;
-  resize: none;
+.tiptap-shell {
   height: 100%;
-  width: 100%;
+  overflow-y: auto;
+  padding: 14px;
+}
+
+.tiptap-shell .ProseMirror {
+  min-height: 100%;
+  outline: none;
+  border: 0;
   font-family: 'JetBrains Mono', Consolas, monospace;
   font-size: 14px;
   line-height: 1.7;
   background: transparent;
   color: inherit;
-  overflow: auto;
 }
 
-.preview-markdown {
-  height: 100%;
-  overflow-y: auto;
-  padding: 16px;
+.tiptap-shell .ProseMirror p,
+.tiptap-shell .ProseMirror ul,
+.tiptap-shell .ProseMirror ol {
+  margin: 0 0 10px;
 }
 
-.preview-markdown h1,
-.preview-markdown h2,
-.preview-markdown h3 {
+.tiptap-shell .ProseMirror h1,
+.tiptap-shell .ProseMirror h2,
+.tiptap-shell .ProseMirror h3 {
   margin: 14px 0 10px;
+  line-height: 1.3;
 }
 
-.preview-markdown p,
-.preview-markdown ul,
-.preview-markdown ol {
-  margin: 8px 0;
-  color: #394254;
+.tiptap-shell .ProseMirror ul,
+.tiptap-shell .ProseMirror ol {
+  padding-left: 22px;
 }
 
-.theme-dark .preview-markdown p,
-.theme-dark .preview-markdown ul,
-.theme-dark .preview-markdown ol {
-  color: #c7d1ea;
+.tiptap-shell .ProseMirror a {
+  color: #2e6ff0;
+  text-decoration: underline;
 }
 
-.preview-markdown img {
+.tiptap-shell .ProseMirror img {
   max-width: 100%;
   border: 1px solid var(--line);
   border-radius: 6px;
 }
 
-.preview-markdown code,
-.preview-markdown pre {
+.tiptap-shell .ProseMirror code,
+.tiptap-shell .ProseMirror pre {
   font-family: 'JetBrains Mono', Consolas, monospace;
 }
 
-.preview-markdown pre {
+.tiptap-shell .ProseMirror pre {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 10px;
@@ -718,9 +723,17 @@ body {
   overflow: auto;
 }
 
-.theme-dark .preview-markdown pre {
+.theme-dark .tiptap-shell .ProseMirror pre {
   border-color: rgba(102, 116, 151, 0.45);
   background: rgba(33, 41, 62, 0.9);
+}
+
+.theme-dark .tiptap-shell .ProseMirror a {
+  color: #7fb2ff;
+}
+
+.tiptap-shell-readonly .ProseMirror {
+  cursor: default;
 }
 
 .editor-footer {

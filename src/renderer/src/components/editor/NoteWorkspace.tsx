@@ -1,9 +1,22 @@
-import { useRef } from 'react'
-import ReactMarkdown from 'react-markdown'
-import rehypeSanitize from 'rehype-sanitize'
-import remarkGfm from 'remark-gfm'
+import Image from '@tiptap/extension-image'
+import Link from '@tiptap/extension-link'
+import Underline from '@tiptap/extension-underline'
+import { Editor, EditorContent, useEditor } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
+import { useEffect, useRef } from 'react'
 import { BiBold, BiItalic, BiStrikethrough, BiUnderline } from 'react-icons/bi'
-import { FiChevronLeft, FiCode, FiDownload, FiImage, FiLink2, FiList, FiMaximize2, FiSave, FiShare2, FiTrash2 } from 'react-icons/fi'
+import {
+  FiChevronLeft,
+  FiCode,
+  FiDownload,
+  FiImage,
+  FiLink2,
+  FiList,
+  FiMaximize2,
+  FiSave,
+  FiShare2,
+  FiTrash2
+} from 'react-icons/fi'
 import { MdFormatListNumbered, MdHistory } from 'react-icons/md'
 import { EditorViewMode, NoteItem } from '../../types/notes'
 
@@ -19,11 +32,6 @@ interface NoteWorkspaceProps {
   onDeleteNote: () => void
 }
 
-interface SelectionRange {
-  start: number
-  end: number
-}
-
 export function NoteWorkspace({
   note,
   mode,
@@ -35,146 +43,51 @@ export function NoteWorkspace({
   onSave,
   onDeleteNote
 }: NoteWorkspaceProps): React.JSX.Element {
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const editorRootRef = useRef<HTMLElement | null>(null)
-  const selectionRef = useRef<SelectionRange>({ start: 0, end: 0 })
+  const onContentChangeRef = useRef(onContentChange)
+
+  useEffect(() => {
+    onContentChangeRef.current = onContentChange
+  }, [onContentChange])
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Underline,
+      Link.configure({
+        autolink: true,
+        openOnClick: true
+      }),
+      Image.configure({
+        allowBase64: true,
+        inline: false
+      })
+    ],
+    content: note?.content || '<p></p>',
+    editorProps: {
+      attributes: {
+        class: 'tiptap-input'
+      }
+    },
+    onUpdate: ({ editor: activeEditor }) => {
+      onContentChangeRef.current(activeEditor.getHTML())
+    }
+  })
+
+  useEffect(() => {
+    if (!editor || !note) return
+    if (editor.getHTML() !== note.content) {
+      editor.commands.setContent(note.content || '<p></p>', { emitUpdate: false })
+    }
+  }, [editor, note])
+
+  useEffect(() => {
+    if (!editor) return
+    editor.setEditable(mode === 'edit')
+  }, [editor, mode])
 
   if (!note) {
     return <section className="column-editor empty-state">Select a note to continue.</section>
-  }
-
-  const updateWithSelection = (nextValue: string, nextSelectionStart: number, nextSelectionEnd: number): void => {
-    selectionRef.current = { start: nextSelectionStart, end: nextSelectionEnd }
-    onContentChange(nextValue)
-    requestAnimationFrame(() => {
-      const textarea = textareaRef.current
-      if (!textarea) return
-      textarea.focus()
-      textarea.setSelectionRange(nextSelectionStart, nextSelectionEnd)
-    })
-  }
-
-  const rememberSelection = (): void => {
-    const textarea = textareaRef.current
-    if (!textarea) return
-    selectionRef.current = {
-      start: textarea.selectionStart,
-      end: textarea.selectionEnd
-    }
-  }
-
-  const getSelectionSnapshot = (): { content: string; start: number; end: number } | null => {
-    const textarea = textareaRef.current
-    if (!textarea) return null
-
-    const rawStart =
-      document.activeElement === textarea ? textarea.selectionStart : selectionRef.current.start
-    const rawEnd = document.activeElement === textarea ? textarea.selectionEnd : selectionRef.current.end
-    const start = Math.max(0, Math.min(rawStart, textarea.value.length))
-    const end = Math.max(0, Math.min(rawEnd, textarea.value.length))
-
-    return { content: textarea.value, start, end }
-  }
-
-  const keepEditorFocus = (event: React.MouseEvent<HTMLButtonElement>): void => {
-    event.preventDefault()
-  }
-
-  const runEditorAction = (action: () => void): void => {
-    if (mode !== 'edit') {
-      onModeChange('edit')
-      requestAnimationFrame(() =>
-        requestAnimationFrame(() => {
-          const textarea = textareaRef.current
-          if (!textarea) return
-          const { start, end } = selectionRef.current
-          textarea.focus()
-          textarea.setSelectionRange(start, end)
-          action()
-        })
-      )
-      return
-    }
-    action()
-  }
-
-  const wrapSelection = (prefix: string, suffix = prefix, placeholder = 'text'): void => {
-    runEditorAction(() => {
-      const snapshot = getSelectionSnapshot()
-      if (!snapshot) return
-      const { content, start, end } = snapshot
-      const selectedText = content.slice(start, end) || placeholder
-      const nextValue = `${content.slice(0, start)}${prefix}${selectedText}${suffix}${content.slice(end)}`
-      const nextStart = start + prefix.length
-      const nextEnd = nextStart + selectedText.length
-
-      updateWithSelection(nextValue, nextStart, nextEnd)
-    })
-  }
-
-  const applyLinePrefix = (prefixBuilder: (index: number) => string): void => {
-    runEditorAction(() => {
-      const snapshot = getSelectionSnapshot()
-      if (!snapshot) return
-      const { content, start, end } = snapshot
-
-      const blockStart = content.lastIndexOf('\n', Math.max(start - 1, 0)) + 1
-      const blockEndIndex = content.indexOf('\n', end)
-      const blockEnd = blockEndIndex === -1 ? content.length : blockEndIndex
-
-      const block = content.slice(blockStart, blockEnd)
-      const lines = block.split('\n')
-      const transformedBlock = lines
-        .map((line, index) => {
-          if (line.trim().length === 0) return line
-          return `${prefixBuilder(index)}${line}`
-        })
-        .join('\n')
-
-      const nextValue = `${content.slice(0, blockStart)}${transformedBlock}${content.slice(blockEnd)}`
-      updateWithSelection(nextValue, blockStart, blockStart + transformedBlock.length)
-    })
-  }
-
-  const applyCodeBlock = (): void => {
-    runEditorAction(() => {
-      const snapshot = getSelectionSnapshot()
-      if (!snapshot) return
-      const { content, start, end } = snapshot
-      const selectedText = content.slice(start, end) || 'code'
-      const block = `\`\`\`\n${selectedText}\n\`\`\``
-      const nextValue = `${content.slice(0, start)}${block}${content.slice(end)}`
-
-      updateWithSelection(nextValue, start + 4, start + 4 + selectedText.length)
-    })
-  }
-
-  const insertImage = (): void => {
-    runEditorAction(() => {
-      const snapshot = getSelectionSnapshot()
-      if (!snapshot) return
-      const { content, start, end } = snapshot
-      const altText = content.slice(start, end) || 'image description'
-      const token = `![${altText}](https://example.com/image.jpg)`
-      const nextValue = `${content.slice(0, start)}${token}${content.slice(end)}`
-      const altStart = start + 2
-
-      updateWithSelection(nextValue, altStart, altStart + altText.length)
-    })
-  }
-
-  const insertLink = (): void => {
-    runEditorAction(() => {
-      const snapshot = getSelectionSnapshot()
-      if (!snapshot) return
-      const { content, start, end } = snapshot
-      const linkText = content.slice(start, end) || 'link text'
-      const token = `[${linkText}](https://example.com)`
-      const nextValue = `${content.slice(0, start)}${token}${content.slice(end)}`
-      const linkStart = start + 1
-
-      updateWithSelection(nextValue, linkStart, linkStart + linkText.length)
-    })
   }
 
   const toggleFullscreen = (): void => {
@@ -187,6 +100,41 @@ export function NoteWorkspace({
       void root.requestFullscreen()
     }
   }
+
+  const withEditor = (runner: (activeEditor: Editor) => void): void => {
+    if (!editor) return
+    if (mode !== 'edit') {
+      onModeChange('edit')
+      requestAnimationFrame(() => {
+        runner(editor)
+      })
+      return
+    }
+    runner(editor)
+  }
+
+  const setLink = (): void => {
+    withEditor((activeEditor) => {
+      const previousHref = activeEditor.getAttributes('link').href as string | undefined
+      const url = window.prompt('Enter URL', previousHref ?? 'https://')
+      if (url === null) return
+      if (url.trim().length === 0) {
+        activeEditor.chain().focus().unsetLink().run()
+        return
+      }
+      activeEditor.chain().focus().extendMarkRange('link').setLink({ href: url.trim() }).run()
+    })
+  }
+
+  const setImage = (): void => {
+    withEditor((activeEditor) => {
+      const url = window.prompt('Image URL', 'https://')
+      if (!url || url.trim().length === 0) return
+      activeEditor.chain().focus().setImage({ src: url.trim() }).run()
+    })
+  }
+
+  const isReadonly = mode !== 'edit'
 
   return (
     <section ref={editorRootRef} className="column-editor">
@@ -214,10 +162,20 @@ export function NoteWorkspace({
             </button>
           </div>
           <div className="mode-quick-tools">
-            <button type="button" className="mode-icon-btn" aria-label="Back to preview" onClick={() => onModeChange('preview')}>
+            <button
+              type="button"
+              className="mode-icon-btn"
+              aria-label="Back to preview"
+              onClick={() => onModeChange('preview')}
+            >
               <FiChevronLeft aria-hidden />
             </button>
-            <button type="button" className="mode-icon-btn" aria-label="Expand editor" onClick={toggleFullscreen}>
+            <button
+              type="button"
+              className="mode-icon-btn"
+              aria-label="Expand editor"
+              onClick={toggleFullscreen}
+            >
               <FiMaximize2 aria-hidden />
             </button>
           </div>
@@ -225,68 +183,73 @@ export function NoteWorkspace({
       </header>
 
       <div className="editor-toolbar">
-        <button type="button" title="Bold" onMouseDown={keepEditorFocus} onClick={() => wrapSelection('**')}>
+        <button
+          type="button"
+          title="Bold"
+          disabled={isReadonly}
+          onClick={() => withEditor((activeEditor) => activeEditor.chain().focus().toggleBold().run())}
+        >
           <BiBold aria-hidden />
         </button>
-        <button type="button" title="Italic" onMouseDown={keepEditorFocus} onClick={() => wrapSelection('*')}>
+        <button
+          type="button"
+          title="Italic"
+          disabled={isReadonly}
+          onClick={() => withEditor((activeEditor) => activeEditor.chain().focus().toggleItalic().run())}
+        >
           <BiItalic aria-hidden />
         </button>
         <button
           type="button"
           title="Underline"
-          onMouseDown={keepEditorFocus}
-          onClick={() => wrapSelection('<u>', '</u>')}
+          disabled={isReadonly}
+          onClick={() => withEditor((activeEditor) => activeEditor.chain().focus().toggleUnderline().run())}
         >
           <BiUnderline aria-hidden />
         </button>
-        <button type="button" title="Strike" onMouseDown={keepEditorFocus} onClick={() => wrapSelection('~~')}>
+        <button
+          type="button"
+          title="Strike"
+          disabled={isReadonly}
+          onClick={() => withEditor((activeEditor) => activeEditor.chain().focus().toggleStrike().run())}
+        >
           <BiStrikethrough aria-hidden />
         </button>
         <button
           type="button"
           title="Bullet list"
-          onMouseDown={keepEditorFocus}
-          onClick={() => applyLinePrefix(() => '- ')}
+          disabled={isReadonly}
+          onClick={() => withEditor((activeEditor) => activeEditor.chain().focus().toggleBulletList().run())}
         >
           <FiList aria-hidden />
         </button>
         <button
           type="button"
           title="Numbered list"
-          onMouseDown={keepEditorFocus}
-          onClick={() => applyLinePrefix((index) => `${index + 1}. `)}
+          disabled={isReadonly}
+          onClick={() => withEditor((activeEditor) => activeEditor.chain().focus().toggleOrderedList().run())}
         >
           <MdFormatListNumbered aria-hidden />
         </button>
-        <button type="button" title="Code block" onMouseDown={keepEditorFocus} onClick={applyCodeBlock}>
+        <button
+          type="button"
+          title="Code block"
+          disabled={isReadonly}
+          onClick={() => withEditor((activeEditor) => activeEditor.chain().focus().toggleCodeBlock().run())}
+        >
           <FiCode aria-hidden />
         </button>
-        <button type="button" title="Insert image" onMouseDown={keepEditorFocus} onClick={insertImage}>
+        <button type="button" title="Insert image" disabled={isReadonly} onClick={setImage}>
           <FiImage aria-hidden />
         </button>
-        <button type="button" title="Insert link" onMouseDown={keepEditorFocus} onClick={insertLink}>
+        <button type="button" title="Insert link" disabled={isReadonly} onClick={setLink}>
           <FiLink2 aria-hidden />
         </button>
       </div>
 
-      {mode === 'edit' ? (
-        <textarea
-          ref={textareaRef}
-          className="editor-textarea-v2"
-          value={note.content}
-          onChange={(event) => onContentChange(event.target.value)}
-          onClick={rememberSelection}
-          onKeyUp={rememberSelection}
-          onSelect={rememberSelection}
-          onBlur={rememberSelection}
-        />
-      ) : (
-        <article className="preview-markdown">
-          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
-            {note.content}
-          </ReactMarkdown>
-        </article>
-      )}
+      <div className={`tiptap-shell ${isReadonly ? 'tiptap-shell-readonly' : ''}`}>
+        <EditorContent editor={editor} />
+      </div>
 
       <footer className="editor-footer">
         <div className="attachment">
