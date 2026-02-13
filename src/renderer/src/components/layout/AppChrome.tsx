@@ -1,5 +1,5 @@
 import { ReactNode } from 'react'
-import { FiMoon, FiRefreshCcw, FiSun, FiUser } from 'react-icons/fi'
+import { FiBell, FiChevronDown, FiCornerUpRight, FiMessageSquare, FiMoon, FiRefreshCcw, FiSun, FiUser } from 'react-icons/fi'
 import { SyncState, ThemeMode } from '../../types/notes'
 
 interface AppChromeProps {
@@ -42,6 +42,26 @@ export function AppChrome({
             </span>
           </div>
         </header>
+
+        <div className="window-quickbar">
+          <div className="quickbar-icons">
+            <button type="button" className="quickbar-btn" aria-label="Messages">
+              <FiMessageSquare aria-hidden />
+            </button>
+            <button type="button" className="quickbar-btn" aria-label="Notifications">
+              <FiBell aria-hidden />
+            </button>
+            <button type="button" className="quickbar-btn" aria-label="Share options">
+              <FiCornerUpRight aria-hidden />
+            </button>
+            <button type="button" className="quickbar-btn" aria-label="Profile">
+              <FiUser aria-hidden />
+            </button>
+            <button type="button" className="quickbar-btn" aria-label="More">
+              <FiChevronDown aria-hidden />
+            </button>
+          </div>
+        </div>
 
         <section className="window-content">{children}</section>
       </div>

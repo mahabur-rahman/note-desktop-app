@@ -115,7 +115,7 @@ body {
 }
 
 .window-content {
-  height: calc(100% - 58px);
+  height: calc(100% - 94px);
   display: grid;
   grid-template-columns: 230px 320px minmax(560px, 1fr);
   grid-template-areas: 'sidebar list editor';
@@ -126,6 +126,57 @@ body {
 
 .theme-dark .window-content {
   background: #141b2b;
+}
+
+.window-quickbar {
+  height: 36px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 12px;
+  background: #eceff6;
+}
+
+.theme-dark .window-quickbar {
+  border-bottom-color: rgba(100, 113, 146, 0.45);
+  background: #1f293f;
+}
+
+.quickbar-icons {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quickbar-btn {
+  width: 22px;
+  height: 22px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  color: #30394a;
+}
+
+.quickbar-btn:hover {
+  border-color: var(--line-strong);
+  background: #f5f6fa;
+}
+
+.quickbar-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.theme-dark .quickbar-btn {
+  color: #d5def5;
+}
+
+.theme-dark .quickbar-btn:hover {
+  border-color: rgba(111, 126, 160, 0.5);
+  background: rgba(41, 51, 77, 0.85);
 }
 
 .column-sidebar,
@@ -458,6 +509,12 @@ body {
   padding: 0 14px;
 }
 
+.editor-head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .theme-dark .editor-head {
   border-bottom-color: rgba(98, 111, 144, 0.45);
 }
@@ -475,6 +532,34 @@ body {
 .mode-toggle {
   display: flex;
   gap: 6px;
+}
+
+.mode-quick-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mode-icon-btn {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: #f2f4f8;
+  color: #3e4657;
+  display: grid;
+  place-items: center;
+}
+
+.mode-icon-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.theme-dark .mode-icon-btn {
+  border-color: rgba(110, 122, 154, 0.45);
+  background: rgba(34, 41, 63, 0.9);
+  color: #d8e2fa;
 }
 
 .mode-btn {

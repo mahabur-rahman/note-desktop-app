@@ -2,7 +2,7 @@ import ReactMarkdown from 'react-markdown'
 import rehypeSanitize from 'rehype-sanitize'
 import remarkGfm from 'remark-gfm'
 import { BiBold, BiItalic, BiStrikethrough, BiUnderline } from 'react-icons/bi'
-import { FiCode, FiDownload, FiImage, FiLink2, FiList, FiRotateCcw, FiShare2 } from 'react-icons/fi'
+import { FiChevronLeft, FiCode, FiDownload, FiImage, FiLink2, FiList, FiMaximize2, FiRotateCcw, FiShare2 } from 'react-icons/fi'
 import { MdFormatListNumbered, MdHistory } from 'react-icons/md'
 import { EditorViewMode, NoteItem } from '../../types/notes'
 
@@ -33,21 +33,31 @@ export function NoteWorkspace({
           onChange={(event) => onTitleChange(event.target.value)}
           className="editor-title"
         />
-        <div className="mode-toggle">
-          <button
-            type="button"
-            className={mode === 'edit' ? 'mode-btn mode-btn-active' : 'mode-btn'}
-            onClick={() => onModeChange('edit')}
-          >
-            Edit
-          </button>
-          <button
-            type="button"
-            className={mode === 'preview' ? 'mode-btn mode-btn-active' : 'mode-btn'}
-            onClick={() => onModeChange('preview')}
-          >
-            Preview
-          </button>
+        <div className="editor-head-actions">
+          <div className="mode-toggle">
+            <button
+              type="button"
+              className={mode === 'edit' ? 'mode-btn mode-btn-active' : 'mode-btn'}
+              onClick={() => onModeChange('edit')}
+            >
+              Edit
+            </button>
+            <button
+              type="button"
+              className={mode === 'preview' ? 'mode-btn mode-btn-active' : 'mode-btn'}
+              onClick={() => onModeChange('preview')}
+            >
+              Preview
+            </button>
+          </div>
+          <div className="mode-quick-tools">
+            <button type="button" className="mode-icon-btn" aria-label="Back">
+              <FiChevronLeft aria-hidden />
+            </button>
+            <button type="button" className="mode-icon-btn" aria-label="Expand">
+              <FiMaximize2 aria-hidden />
+            </button>
+          </div>
         </div>
       </header>
 
