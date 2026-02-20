@@ -1,4 +1,6 @@
 import { app, BrowserWindow, nativeImage } from 'electron'
+import { mkdirSync, writeFileSync } from 'node:fs'
+import { homedir } from 'node:os'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -7,9 +9,12 @@ import icon from '../../resources/icon.png?asset'
 app.commandLine.appendSwitch('disable-logging')
 app.commandLine.appendSwitch('log-level', '3')
 
+const linuxWmClass = 'online-notes'
+
 app.setName('Online Notes')
 if (process.platform === 'linux') {
-  ;(app as Electron.App & { setDesktopName?: (name: string) => void }).setDesktopName?.('online-notes.desktop')
+  app.commandLine.appendSwitch('class', linuxWmClass)
+  ;(app as Electron.App & { setDesktopName?: (name: string) => void }).setDesktopName?.(`${linuxWmClass}.desktop`)
 }
 
 function createWindow(): void {
@@ -53,7 +58,36 @@ function createWindow(): void {
   })
 }
 
+function ensureLinuxDesktopEntry(): void {
+  if (process.platform !== 'linux') return
+
+  try {
+    const applicationsDir = join(homedir(), '.local', 'share', 'applications')
+    const desktopEntryPath = join(applicationsDir, `${linuxWmClass}.desktop`)
+    const desktopEntry = [
+      '[Desktop Entry]',
+      'Type=Application',
+      'Name=Online Notes',
+      'Comment=Online Notes Desktop App',
+      `Exec=${process.execPath}`,
+      `Icon=${icon}`,
+      'Terminal=false',
+      'Categories=Utility;',
+      'StartupNotify=true',
+      `StartupWMClass=${linuxWmClass}`,
+      ''
+    ].join('\n')
+
+    mkdirSync(applicationsDir, { recursive: true })
+    writeFileSync(desktopEntryPath, desktopEntry, 'utf8')
+  } catch (error) {
+    console.error('Failed to write Linux desktop entry', error)
+  }
+}
+
 app.whenReady().then(() => {
+  ensureLinuxDesktopEntry()
+
   if (process.platform === 'darwin' && app.dock) {
     app.dock.setIcon(nativeImage.createFromPath(icon))
   }
