@@ -1,10 +1,16 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, nativeImage } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
+import icon from '../../resources/icon.png?asset'
 
 // Suppress Chromium/DevTools internal protocol noise in terminal output.
 app.commandLine.appendSwitch('disable-logging')
 app.commandLine.appendSwitch('log-level', '3')
+
+app.setName('Online Notes')
+if (process.platform === 'linux') {
+  ;(app as Electron.App & { setDesktopName?: (name: string) => void }).setDesktopName?.('online-notes.desktop')
+}
 
 function createWindow(): void {
   const shouldOpenDevTools = is.dev && process.env['OPEN_DEVTOOLS'] !== '0'
@@ -13,11 +19,18 @@ function createWindow(): void {
     width: 900,
     height: 600,
     autoHideMenuBar: true,
+    icon,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
     }
   })
+
+  if (process.platform === 'linux') {
+    ;(mainWindow as BrowserWindow & { setIcon?: (icon: Electron.NativeImage) => void }).setIcon?.(
+      nativeImage.createFromPath(icon)
+    )
+  }
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
@@ -41,6 +54,10 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  if (process.platform === 'darwin' && app.dock) {
+    app.dock.setIcon(nativeImage.createFromPath(icon))
+  }
+
   createWindow()
 
   app.on('activate', function () {
