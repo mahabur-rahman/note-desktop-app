@@ -1,0 +1,24 @@
+import { FiTrash2 } from 'react-icons/fi'
+import { IconButton } from '../common/IconButton'
+
+interface NoteTitleRowProps {
+  title: string
+}
+
+export function NoteTitleRow({ title }: NoteTitleRowProps): React.JSX.Element {
+  return (
+    <div className="grid grid-cols-[minmax(0,1fr)_42px] items-center border-b border-[#d9dee5] bg-[#f7f7f8] md:grid-cols-[minmax(0,1fr)_48px]">
+      <input
+        className="h-full w-full cursor-default border-0 bg-transparent px-3 text-sm text-[#505664] outline-none md:px-5 md:text-[15px]"
+        aria-label="Note title"
+        defaultValue={title}
+      />
+      <IconButton
+        ariaLabel="Delete note"
+        className="cursor-default bg-transparent p-1 text-lg text-[#1f232d] md:text-[22px]"
+      >
+        <FiTrash2 />
+      </IconButton>
+    </div>
+  )
+}

@@ -1,0 +1,54 @@
+import { FiAlignLeft, FiMoreVertical, FiPlus, FiSearch } from 'react-icons/fi'
+import type { NoteSummary } from '../../types/ui'
+import { IconButton } from '../common/IconButton'
+
+interface NotesSidebarProps {
+  note: NoteSummary
+}
+
+export function NotesSidebar({ note }: NotesSidebarProps): React.JSX.Element {
+  return (
+    <aside className="flex flex-col border-b border-[#d9dee5] bg-[#f3f4f6] md:border-r md:border-b-0">
+      <div className="border-b border-[#d9dee5]">
+        <button
+          className="mx-3 my-4 inline-flex h-[52px] w-[calc(100%_-_24px)] cursor-default items-center justify-center gap-2 rounded bg-[#5165f7] text-base font-normal text-white"
+          type="button"
+        >
+          <FiPlus className="text-lg" />
+          <span>Create new</span>
+        </button>
+
+        <div className="relative border-y border-[#d9dee5] bg-[#f5f6f8]">
+          <input
+            className="h-14 w-full cursor-default border-0 bg-transparent px-4 pr-10 text-base text-[#7d828d] outline-none"
+            aria-label="Search notes"
+            placeholder="Search..."
+            readOnly
+          />
+          <FiSearch className="pointer-events-none absolute top-1/2 right-3.5 -translate-y-1/2 text-lg text-[#8b909a]" />
+        </div>
+
+        <div className="flex h-10 items-center justify-between border-b border-[#d9dee5] bg-[#f4f5f7] px-3">
+          <IconButton
+            ariaLabel="Filter notes"
+            className="cursor-default bg-transparent p-0.5 text-lg text-[#646a75]"
+          >
+            <FiAlignLeft />
+          </IconButton>
+          <IconButton
+            ariaLabel="More actions"
+            className="cursor-default bg-transparent p-0.5 text-lg text-[#646a75]"
+          >
+            <FiMoreVertical />
+          </IconButton>
+        </div>
+      </div>
+
+      <article className="border-t border-[#d9dee5] bg-[#e6e7e9] p-4">
+        <h3 className="m-0 text-lg leading-[1.2] font-bold text-[#2f3440]">{note.title}</h3>
+        <p className="my-1 text-base text-[#444a56]">{note.excerpt}</p>
+        <span className="text-[15px] text-[#4f5562]">{note.relativeTime}</span>
+      </article>
+    </aside>
+  )
+}
