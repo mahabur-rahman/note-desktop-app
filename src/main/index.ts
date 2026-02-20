@@ -10,6 +10,8 @@ app.commandLine.appendSwitch('disable-logging')
 app.commandLine.appendSwitch('log-level', '3')
 
 const linuxWmClass = 'online-notes'
+const defaultWindowSize = { width: 1200, height: 760 }
+const minimumWindowSize = { width: 900, height: 560 }
 
 app.setName('Online Notes')
 if (process.platform === 'linux') {
@@ -21,8 +23,10 @@ function createWindow(): void {
   const shouldOpenDevTools = is.dev && process.env['OPEN_DEVTOOLS'] !== '0'
 
   const mainWindow = new BrowserWindow({
-    width: 900,
-    height: 600,
+    width: defaultWindowSize.width,
+    height: defaultWindowSize.height,
+    minWidth: minimumWindowSize.width,
+    minHeight: minimumWindowSize.height,
     autoHideMenuBar: true,
     icon,
     webPreferences: {
