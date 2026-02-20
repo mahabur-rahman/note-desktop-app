@@ -3,6 +3,10 @@ import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
+// Suppress Chromium/DevTools internal protocol noise in terminal output.
+app.commandLine.appendSwitch('disable-logging')
+app.commandLine.appendSwitch('log-level', '3')
+
 function createWindow(): void {
   const shouldOpenDevTools = is.dev && process.env['OPEN_DEVTOOLS'] !== '0'
 
@@ -26,6 +30,16 @@ function createWindow(): void {
   if (shouldOpenDevTools) {
     mainWindow.webContents.openDevTools()
   }
+
+  mainWindow.webContents.on('console-message', (event, _level, message, _line, sourceId) => {
+    const isDevToolsAutofillNoise =
+      sourceId.startsWith('devtools://') &&
+      (message.includes('Autofill.enable') || message.includes('Autofill.setAddresses'))
+
+    if (isDevToolsAutofillNoise) {
+      event.preventDefault()
+    }
+  })
 }
 
 app.whenReady().then(() => {
