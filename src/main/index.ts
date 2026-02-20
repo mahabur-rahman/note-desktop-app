@@ -1,7 +1,6 @@
 import { app, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
-import icon from '../../resources/icon.png?asset'
 
 // Suppress Chromium/DevTools internal protocol noise in terminal output.
 app.commandLine.appendSwitch('disable-logging')
@@ -14,7 +13,6 @@ function createWindow(): void {
     width: 900,
     height: 600,
     autoHideMenuBar: true,
-    ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false

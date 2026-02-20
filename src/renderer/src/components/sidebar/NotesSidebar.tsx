@@ -1,15 +1,19 @@
 import { FiAlignLeft, FiMoreVertical, FiPlus, FiSearch } from 'react-icons/fi'
 import type { NoteSummary } from '../../types/ui'
+import { AppBrand } from '../common/AppBrand'
 import { IconButton } from '../common/IconButton'
 
 interface NotesSidebarProps {
+  appTitle: string
   note: NoteSummary
 }
 
-export function NotesSidebar({ note }: NotesSidebarProps): React.JSX.Element {
+export function NotesSidebar({ appTitle, note }: NotesSidebarProps): React.JSX.Element {
   return (
     <aside className="flex flex-col border-b border-[#d9dee5] bg-[#f3f4f6] md:border-r md:border-b-0">
       <div className="border-b border-[#d9dee5]">
+        <AppBrand title={appTitle} />
+
         <button
           className="mx-3 my-4 inline-flex h-[52px] w-[calc(100%_-_24px)] cursor-default items-center justify-center gap-2 rounded bg-[#5165f7] text-base font-normal text-white"
           type="button"
