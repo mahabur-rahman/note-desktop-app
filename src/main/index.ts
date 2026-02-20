@@ -4,6 +4,8 @@ import { is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
 function createWindow(): void {
+  const shouldOpenDevTools = is.dev && process.env['OPEN_DEVTOOLS'] !== '0'
+
   const mainWindow = new BrowserWindow({
     width: 900,
     height: 600,
@@ -21,7 +23,9 @@ function createWindow(): void {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
 
-  mainWindow.webContents.openDevTools()
+  if (shouldOpenDevTools) {
+    mainWindow.webContents.openDevTools()
+  }
 }
 
 app.whenReady().then(() => {
