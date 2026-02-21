@@ -1,4 +1,4 @@
-import { app, BrowserWindow, nativeImage } from 'electron'
+import { app, BrowserWindow, ipcMain, nativeImage } from 'electron'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'path'
@@ -90,6 +90,24 @@ function ensureLinuxDesktopEntry(): void {
 }
 
 app.whenReady().then(() => {
+  ipcMain.handle('window:toggle-maximize', () => {
+    const targetWindow = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
+    if (!targetWindow) return false
+
+    if (targetWindow.isMaximized()) {
+      targetWindow.unmaximize()
+      return false
+    }
+
+    targetWindow.maximize()
+    return true
+  })
+
+  ipcMain.handle('window:is-maximized', () => {
+    const targetWindow = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
+    return targetWindow?.isMaximized() ?? false
+  })
+
   ensureLinuxDesktopEntry()
 
   if (process.platform === 'darwin' && app.dock) {

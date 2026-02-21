@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { NoteSummary } from '../../types/ui'
 import { EditorPane } from '../editor/EditorPane'
 import { AppTopBar } from './AppTopBar'
@@ -12,10 +12,44 @@ interface DesktopNotesLayoutProps {
 
 export function DesktopNotesLayout({ appTitle, activeNote, menuItems }: DesktopNotesLayoutProps): React.JSX.Element {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [isExpandedView, setIsExpandedView] = useState(false)
+
+  useEffect(() => {
+    const syncMaximizedState = async (): Promise<void> => {
+      try {
+        const isMaximized = await window.electron.ipcRenderer.invoke('window:is-maximized')
+        setIsExpandedView(Boolean(isMaximized))
+      } catch {
+        // Keep UI-only fallback state if Electron IPC is unavailable.
+      }
+    }
+
+    void syncMaximizedState()
+  }, [])
+
+  const handleToggleExpandedView = (): void => {
+    const toggleWindow = async (): Promise<void> => {
+      try {
+        const isMaximized = await window.electron.ipcRenderer.invoke('window:toggle-maximize')
+        setIsExpandedView(Boolean(isMaximized))
+      } catch {
+        // Fallback for non-Electron environments.
+        setIsExpandedView((prev) => !prev)
+      }
+    }
+
+    void toggleWindow()
+  }
 
   return (
     <main className="flex min-h-screen w-full flex-col bg-[#f5f6f8] font-sans text-[#2f3340]">
-      <AppTopBar title={appTitle} isSidebarOpen={isSidebarOpen} onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)} />
+      {!isExpandedView && (
+        <AppTopBar
+          title={appTitle}
+          isSidebarOpen={isSidebarOpen}
+          onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
+        />
+      )}
 
       <div className="flex min-h-0 flex-1">
         <div
@@ -28,7 +62,12 @@ export function DesktopNotesLayout({ appTitle, activeNote, menuItems }: DesktopN
         </div>
 
         <div className="min-w-0 flex-1">
-          <EditorPane menuItems={menuItems} noteTitle={activeNote.title} />
+          <EditorPane
+            menuItems={menuItems}
+            noteTitle={activeNote.title}
+            isExpandedView={isExpandedView}
+            onToggleExpandedView={handleToggleExpandedView}
+          />
         </div>
       </div>
     </main>
