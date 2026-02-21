@@ -240,7 +240,7 @@ app.whenReady().then(() => {
     const content = typeof payload.content === 'string' ? payload.content : ''
     const note: NoteRecord & { updatedAt: number } = {
       id: noteId,
-      title: title || 'Untitled Note',
+      title,
       content,
       excerpt: buildExcerpt(content),
       relativeTime: 'just now',
