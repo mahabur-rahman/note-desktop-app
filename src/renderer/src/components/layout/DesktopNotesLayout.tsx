@@ -107,12 +107,24 @@ function downloadBrowserBackup(notes: NoteSummary[]): string {
 export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutProps): React.JSX.Element {
   const [notes, setNotes] = useState<NoteSummary[]>([])
   const [activeNoteId, setActiveNoteId] = useState<string>('')
+  const [searchQuery, setSearchQuery] = useState('')
   const [sidebarViewMode, setSidebarViewMode] = useState<SidebarViewMode>(loadSidebarViewMode)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isExpandedView, setIsExpandedView] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [isClearModalOpen, setIsClearModalOpen] = useState(false)
   const updateTimeoutIdRef = useRef<number | null>(null)
+  const normalizedSearchQuery = searchQuery.trim().toLocaleLowerCase()
+  const filteredNotes =
+    normalizedSearchQuery === ''
+      ? notes
+      : notes.filter((note) => {
+          const normalizedTitle = note.title.toLocaleLowerCase()
+          const normalizedContent = note.content.toLocaleLowerCase()
+          return (
+            normalizedTitle.includes(normalizedSearchQuery) || normalizedContent.includes(normalizedSearchQuery)
+          )
+        })
   const activeNote = notes.find((note) => note.id === activeNoteId) ?? notes[0] ?? null
 
   const clearPendingUpdate = (): void => {
@@ -361,7 +373,7 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
   }
 
   return (
-    <main className="flex min-h-screen w-full flex-col bg-[#f5f6f8] font-sans text-[#2f3340]">
+    <main className="flex h-screen w-full flex-col bg-[#f5f6f8] font-sans text-[#2f3340]">
       {!isExpandedView && (
         <AppTopBar
           title={appTitle}
@@ -373,12 +385,12 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
       <div className="flex min-h-0 flex-1">
         <div
           className={[
-            'shrink-0 overflow-hidden transition-[width] duration-200 ease-out',
+            'min-h-0 shrink-0 overflow-hidden transition-[width] duration-200 ease-out',
             isSidebarOpen ? 'w-[280px] border-r border-[#d9dee5] xl:w-[332px]' : 'w-0 border-r-0'
           ].join(' ')}
         >
           <NotesSidebar
-            notes={notes}
+            notes={filteredNotes}
             activeNoteId={activeNote?.id ?? ''}
             onCreateNote={handleCreateNote}
             onSelectNote={setActiveNoteId}
@@ -386,10 +398,13 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
             onChangeViewMode={setSidebarViewMode}
             onBackup={handleBackupNotes}
             onClear={handleRequestClearNotes}
+            searchQuery={searchQuery}
+            onSearchQueryChange={setSearchQuery}
+            hasAnyNotes={notes.length > 0}
           />
         </div>
 
-        <div className="min-w-0 flex-1">
+        <div className="min-h-0 min-w-0 flex-1">
           <EditorPane
             menuItems={menuItems}
             noteTitle={activeNote?.title ?? null}

@@ -12,6 +12,9 @@ interface NotesSidebarProps {
   onChangeViewMode: (viewMode: SidebarViewMode) => void
   onBackup: () => void
   onClear: () => void
+  searchQuery: string
+  onSearchQueryChange: (value: string) => void
+  hasAnyNotes: boolean
 }
 
 export function NotesSidebar({
@@ -22,7 +25,10 @@ export function NotesSidebar({
   viewMode,
   onChangeViewMode,
   onBackup,
-  onClear
+  onClear,
+  searchQuery,
+  onSearchQueryChange,
+  hasAnyNotes
 }: NotesSidebarProps): React.JSX.Element {
   const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false)
   const actionsMenuRef = useRef<HTMLDivElement | null>(null)
@@ -41,7 +47,7 @@ export function NotesSidebar({
   }, [isActionsMenuOpen])
 
   return (
-    <aside className="flex h-full flex-col bg-[#f3f4f6]">
+    <aside className="flex h-full min-h-0 flex-col bg-[#f3f4f6]">
       <div className="border-b border-[#d9dee5]">
         <button
           className="mx-3 my-4 inline-flex h-[52px] w-[calc(100%_-_24px)] cursor-pointer items-center justify-center gap-2 rounded bg-[#5165f7] text-base font-normal text-white"
@@ -54,10 +60,11 @@ export function NotesSidebar({
 
         <div className="relative border-y border-[#d9dee5] bg-[#f5f6f8]">
           <input
-            className="h-14 w-full cursor-default border-0 bg-transparent px-4 pr-10 text-base text-[#7d828d] outline-none"
+            className="h-14 w-full border-0 bg-transparent px-4 pr-10 text-base text-[#434a57] outline-none"
             aria-label="Search notes"
             placeholder="Search..."
-            readOnly
+            value={searchQuery}
+            onChange={(event) => onSearchQueryChange(event.target.value)}
           />
           <FiSearch className="pointer-events-none absolute top-1/2 right-3.5 -translate-y-1/2 text-lg text-[#8b909a]" />
         </div>
@@ -141,29 +148,35 @@ export function NotesSidebar({
         </div>
       </div>
 
-      {notes.length === 0 ? (
-        <div className="border-t border-[#d9dee5] p-4 text-[15px] text-[#3f4654]">No saved notes.</div>
-      ) : (
-        notes.map((note) => (
-          <button
-            key={note.id}
-            type="button"
-            onClick={() => onSelectNote(note.id)}
-            className={[
-              'w-full border-t border-[#d9dee5] text-left',
-              note.id === activeNoteId ? 'bg-[#e6e7e9]' : 'bg-[#f3f4f6]'
-            ].join(' ')}
-          >
-            <div className={viewMode === 'compact' ? 'px-3 py-2.5' : 'p-4'}>
-              <h3 className="m-0 text-lg leading-[1.2] font-bold text-[#2f3440]">{note.title || 'Untitled Note'}</h3>
-              {viewMode === 'detailed' && <p className="my-1 text-base text-[#444a56]">{note.excerpt}</p>}
-              <span className={viewMode === 'compact' ? 'text-sm text-[#4f5562]' : 'text-[15px] text-[#4f5562]'}>
-                {note.relativeTime}
-              </span>
-            </div>
-          </button>
-        ))
-      )}
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]">
+        {notes.length === 0 ? (
+          <div className="border-t border-[#d9dee5] p-4 text-[15px] text-[#3f4654]">
+            {hasAnyNotes && searchQuery.trim() ? 'No matching notes.' : 'No saved notes.'}
+          </div>
+        ) : (
+          notes.map((note) => (
+            <button
+              key={note.id}
+              type="button"
+              onClick={() => onSelectNote(note.id)}
+              className={[
+                'w-full border-t border-[#d9dee5] text-left',
+                note.id === activeNoteId ? 'bg-[#e6e7e9]' : 'bg-[#f3f4f6]'
+              ].join(' ')}
+            >
+              <div className={viewMode === 'compact' ? 'px-3 py-2.5' : 'p-4'}>
+                <h3 className="m-0 text-lg leading-[1.2] font-bold text-[#2f3440]">
+                  {note.title || 'Untitled Note'}
+                </h3>
+                {viewMode === 'detailed' && <p className="my-1 text-base text-[#444a56]">{note.excerpt}</p>}
+                <span className={viewMode === 'compact' ? 'text-sm text-[#4f5562]' : 'text-[15px] text-[#4f5562]'}>
+                  {note.relativeTime}
+                </span>
+              </div>
+            </button>
+          ))
+        )}
+      </div>
     </aside>
   )
 }
