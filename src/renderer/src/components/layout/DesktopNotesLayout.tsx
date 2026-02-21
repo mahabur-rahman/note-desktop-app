@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { NoteSummary, SidebarViewMode } from '../../types/ui'
+import type { NoteSummary, SidebarSortMode, SidebarViewMode } from '../../types/ui'
 import { ConfirmModal } from '../common/ConfirmModal'
 import { EditorPane } from '../editor/EditorPane'
 import { AppTopBar } from './AppTopBar'
@@ -21,6 +21,7 @@ interface NotesApi {
 
 const browserNotesStorageKey = 'online-notes:web-notes'
 const sidebarViewModeStorageKey = 'online-notes:sidebar-view-mode'
+const sidebarSortModeStorageKey = 'online-notes:sidebar-sort-mode'
 
 function generateNoteId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -40,14 +41,7 @@ function loadBrowserNotes(): NoteSummary[] {
     const rawValue = window.localStorage.getItem(browserNotesStorageKey)
     if (!rawValue) return []
     const parsedValue = JSON.parse(rawValue) as Array<Partial<NoteSummary>>
-    if (!Array.isArray(parsedValue)) return []
-    return parsedValue.map((note) => ({
-      id: typeof note.id === 'string' ? note.id : generateNoteId(),
-      title: typeof note.title === 'string' ? note.title : 'Untitled Note',
-      excerpt: typeof note.excerpt === 'string' ? note.excerpt : 'Blank',
-      content: typeof note.content === 'string' ? note.content : '',
-      relativeTime: typeof note.relativeTime === 'string' ? note.relativeTime : 'just now'
-    }))
+    return normalizeNotes(parsedValue)
   } catch {
     return []
   }
@@ -66,12 +60,41 @@ function getNotesApi(): Partial<NotesApi> | null {
   return desktopApi ?? null
 }
 
+function normalizeNotes(notes: Array<Partial<NoteSummary>>): NoteSummary[] {
+  if (!Array.isArray(notes)) return []
+  return notes.map((note) => {
+    const now = Date.now()
+    const createdAt = typeof note.createdAt === 'number' ? note.createdAt : now
+    return {
+      id: typeof note.id === 'string' ? note.id : generateNoteId(),
+      title: typeof note.title === 'string' ? note.title : 'Untitled Note',
+      excerpt: typeof note.excerpt === 'string' ? note.excerpt : 'Blank',
+      content: typeof note.content === 'string' ? note.content : '',
+      relativeTime: typeof note.relativeTime === 'string' ? note.relativeTime : 'just now',
+      createdAt,
+      updatedAt: typeof note.updatedAt === 'number' ? note.updatedAt : createdAt
+    }
+  })
+}
+
 function loadSidebarViewMode(): SidebarViewMode {
   try {
     const rawValue = window.localStorage.getItem(sidebarViewModeStorageKey)
     return rawValue === 'compact' ? 'compact' : 'detailed'
   } catch {
     return 'detailed'
+  }
+}
+
+function loadSidebarSortMode(): SidebarSortMode {
+  try {
+    const rawValue = window.localStorage.getItem(sidebarSortModeStorageKey)
+    if (rawValue === 'alphabetical' || rawValue === 'creation-date' || rawValue === 'last-modified') {
+      return rawValue
+    }
+    return 'last-modified'
+  } catch {
+    return 'last-modified'
   }
 }
 
@@ -109,6 +132,7 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
   const [activeNoteId, setActiveNoteId] = useState<string>('')
   const [searchQuery, setSearchQuery] = useState('')
   const [sidebarViewMode, setSidebarViewMode] = useState<SidebarViewMode>(loadSidebarViewMode)
+  const [sidebarSortMode, setSidebarSortMode] = useState<SidebarSortMode>(loadSidebarSortMode)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isExpandedView, setIsExpandedView] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
@@ -125,6 +149,19 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
             normalizedTitle.includes(normalizedSearchQuery) || normalizedContent.includes(normalizedSearchQuery)
           )
         })
+  const sortedFilteredNotes = [...filteredNotes].sort((firstNote, secondNote) => {
+    if (sidebarSortMode === 'alphabetical') {
+      const titleCompare = firstNote.title.localeCompare(secondNote.title, undefined, { sensitivity: 'base' })
+      if (titleCompare !== 0) return titleCompare
+      return secondNote.updatedAt - firstNote.updatedAt
+    }
+
+    if (sidebarSortMode === 'creation-date') {
+      return secondNote.createdAt - firstNote.createdAt
+    }
+
+    return secondNote.updatedAt - firstNote.updatedAt
+  })
   const activeNote = notes.find((note) => note.id === activeNoteId) ?? notes[0] ?? null
 
   const clearPendingUpdate = (): void => {
@@ -137,8 +174,9 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
     const loadNotes = async (): Promise<void> => {
       try {
         const notesApi = getNotesApi()
-        const storedNotes =
+        const storedNotes = normalizeNotes(
           notesApi && typeof notesApi.list === 'function' ? await notesApi.list() : loadBrowserNotes()
+        )
         setNotes(storedNotes)
         setActiveNoteId(storedNotes[0]?.id ?? '')
       } catch (error) {
@@ -185,6 +223,14 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
     }
   }, [sidebarViewMode])
 
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(sidebarSortModeStorageKey, sidebarSortMode)
+    } catch {
+      // Ignore localStorage failures in restricted contexts.
+    }
+  }, [sidebarSortMode])
+
   const queuePersistNote = (note: NoteSummary): void => {
     clearPendingUpdate()
     updateTimeoutIdRef.current = window.setTimeout(() => {
@@ -220,10 +266,12 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
   const handleChangeActiveNoteTitle = (title: string): void => {
     if (!activeNote) return
 
+    const now = Date.now()
     const nextNote: NoteSummary = {
       ...activeNote,
       title,
-      relativeTime: 'just now'
+      relativeTime: 'just now',
+      updatedAt: now
     }
 
     setNotes((prev) => prev.map((note) => (note.id === activeNote.id ? nextNote : note)))
@@ -233,11 +281,13 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
   const handleChangeActiveNoteContent = (content: string): void => {
     if (!activeNote) return
 
+    const now = Date.now()
     const nextNote: NoteSummary = {
       ...activeNote,
       content,
       excerpt: buildExcerpt(content),
-      relativeTime: 'just now'
+      relativeTime: 'just now',
+      updatedAt: now
     }
 
     setNotes((prev) => prev.map((note) => (note.id === activeNote.id ? nextNote : note)))
@@ -293,15 +343,18 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
     const createNote = async (): Promise<void> => {
       try {
         const notesApi = getNotesApi()
+        const now = Date.now()
         const createdNote =
           notesApi && typeof notesApi.create === 'function'
-            ? await notesApi.create()
+            ? normalizeNotes([await notesApi.create()])[0]
             : {
               id: generateNoteId(),
               title: 'Untitled Note',
               excerpt: 'Blank',
               content: '',
-              relativeTime: 'just now'
+              relativeTime: 'just now',
+              createdAt: now,
+              updatedAt: now
             }
 
         setNotes((prev) => {
@@ -328,8 +381,9 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
           return
         }
 
-        const notesForBackup =
+        const notesForBackup = normalizeNotes(
           notesApi && typeof notesApi.list === 'function' ? await notesApi.list() : notes
+        )
         const backupName = downloadBrowserBackup(notesForBackup)
         window.alert(`Backup downloaded as ${backupName}`)
       } catch (error) {
@@ -390,12 +444,14 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
           ].join(' ')}
         >
           <NotesSidebar
-            notes={filteredNotes}
+            notes={sortedFilteredNotes}
             activeNoteId={activeNote?.id ?? ''}
             onCreateNote={handleCreateNote}
             onSelectNote={setActiveNoteId}
             viewMode={sidebarViewMode}
             onChangeViewMode={setSidebarViewMode}
+            sortMode={sidebarSortMode}
+            onChangeSortMode={setSidebarSortMode}
             onBackup={handleBackupNotes}
             onClear={handleRequestClearNotes}
             searchQuery={searchQuery}
