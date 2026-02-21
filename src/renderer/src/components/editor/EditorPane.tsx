@@ -9,7 +9,7 @@ interface EditorPaneProps {
 
 export function EditorPane({ menuItems, noteTitle }: EditorPaneProps): React.JSX.Element {
   return (
-    <section className="grid min-h-[62dvh] grid-rows-[44px_54px_minmax(320px,1fr)_28px] bg-[#f8f8f9] md:min-h-screen md:grid-rows-[46px_62px_minmax(0,1fr)_28px]">
+    <section className="grid h-full min-h-[62dvh] grid-rows-[44px_54px_minmax(320px,1fr)_28px] bg-[#f8f8f9] md:min-h-0 md:grid-rows-[46px_62px_minmax(0,1fr)_28px]">
       <TopMenu items={menuItems} />
       <NoteTitleRow title={noteTitle} />
       <div className="bg-[#f7f7f8]" />
