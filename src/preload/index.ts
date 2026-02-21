@@ -1,12 +1,36 @@
-import { contextBridge } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
-// Custom APIs for renderer
-const api = {}
+interface NoteSummary {
+  id: string
+  title: string
+  excerpt: string
+  content: string
+  relativeTime: string
+}
 
-// Use `contextBridge` APIs to expose Electron APIs to
-// renderer only if context isolation is enabled, otherwise
-// just add to the DOM global.
+interface NoteUpdateInput {
+  id: string
+  title: string
+  content: string
+}
+
+interface NotesBackupResult {
+  path: string
+  count: number
+}
+
+const api = {
+  notes: {
+    list: () => ipcRenderer.invoke('notes:list') as Promise<NoteSummary[]>,
+    create: () => ipcRenderer.invoke('notes:create') as Promise<NoteSummary>,
+    update: (payload: NoteUpdateInput) => ipcRenderer.invoke('notes:update', payload) as Promise<NoteSummary | null>,
+    delete: (noteId: string) => ipcRenderer.invoke('notes:delete', noteId) as Promise<boolean>,
+    clear: () => ipcRenderer.invoke('notes:clear') as Promise<number>,
+    backup: () => ipcRenderer.invoke('notes:backup') as Promise<NotesBackupResult>
+  }
+}
+
 if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('electron', electronAPI)

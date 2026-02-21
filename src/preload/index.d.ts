@@ -1,8 +1,38 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
 
+interface NoteSummary {
+  id: string
+  title: string
+  excerpt: string
+  content: string
+  relativeTime: string
+}
+
+interface NoteUpdateInput {
+  id: string
+  title: string
+  content: string
+}
+
+interface NotesBackupResult {
+  path: string
+  count: number
+}
+
+interface DesktopApi {
+  notes: {
+    list: () => Promise<NoteSummary[]>
+    create: () => Promise<NoteSummary>
+    update: (payload: NoteUpdateInput) => Promise<NoteSummary | null>
+    delete: (noteId: string) => Promise<boolean>
+    clear: () => Promise<number>
+    backup: () => Promise<NotesBackupResult>
+  }
+}
+
 declare global {
   interface Window {
     electron: ElectronAPI
-    api: unknown
+    api: DesktopApi
   }
 }
