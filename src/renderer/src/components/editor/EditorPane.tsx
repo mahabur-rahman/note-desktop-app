@@ -1,4 +1,3 @@
-import { FiCheckCircle } from 'react-icons/fi'
 import { NoteTitleRow } from './NoteTitleRow'
 import { TopMenu } from './TopMenu'
 
@@ -6,6 +5,7 @@ interface EditorPaneProps {
   menuItems: readonly string[]
   noteTitle: string | null
   noteContent: string | null
+  characterCount: number
   onChangeNoteTitle: (title: string) => void
   onChangeNoteContent: (content: string) => void
   onDeleteNote: () => void
@@ -17,6 +17,7 @@ export function EditorPane({
   menuItems,
   noteTitle,
   noteContent,
+  characterCount,
   onChangeNoteTitle,
   onChangeNoteContent,
   onDeleteNote,
@@ -41,8 +42,8 @@ export function EditorPane({
           onChange={(event) => onChangeNoteContent(event.target.value)}
         />
       </div>
-      <div className="flex items-center justify-end px-2.5 pb-1 text-xl text-[#3d66f8]" aria-hidden="true">
-        <FiCheckCircle />
+      <div className="flex items-center justify-end px-3 pb-1 text-sm text-[#3d66f8] md:px-4">
+        <span>{`Characters: ${characterCount}`}</span>
       </div>
     </section>
   )
