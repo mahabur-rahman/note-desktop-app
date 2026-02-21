@@ -34,6 +34,16 @@ interface NoteUpdatePayload {
   content: string
 }
 
+interface NotesBackupRecord extends NoteRecord {
+  createdAt: number
+  updatedAt: number
+}
+
+interface NotesBackupResult {
+  path: string
+  count: number
+}
+
 function buildExcerpt(content: string): string {
   const normalizedContent = content.replace(/\s+/g, ' ').trim()
   if (!normalizedContent) return 'Blank'
@@ -95,8 +105,22 @@ function openNotesDatabase() {
   `)
 
   const deleteNote = db.prepare(`DELETE FROM notes WHERE id = ?`)
+  const clearNotes = db.prepare(`DELETE FROM notes`)
 
-  return { listNotes, createNote, updateNote, deleteNote }
+  const listNotesForBackup = db.prepare(`
+    SELECT
+      id,
+      title,
+      excerpt,
+      content,
+      relative_time AS relativeTime,
+      created_at AS createdAt,
+      updated_at AS updatedAt
+    FROM notes
+    ORDER BY updated_at DESC, created_at DESC
+  `)
+
+  return { listNotes, createNote, updateNote, deleteNote, clearNotes, listNotesForBackup }
 }
 
 app.setName('Online Notes')
@@ -241,6 +265,40 @@ app.whenReady().then(() => {
   ipcMain.handle('notes:delete', (_event, noteId: string) => {
     const result = notesDb.deleteNote.run(noteId)
     return result.changes > 0
+  })
+
+  ipcMain.handle('notes:clear', () => {
+    const result = notesDb.clearNotes.run()
+    return result.changes
+  })
+
+  ipcMain.handle('notes:backup', () => {
+    const notes = notesDb.listNotesForBackup.all() as NotesBackupRecord[]
+    const backupDir = join(app.getPath('documents'), 'OnlineNotes', 'backups')
+    const backupName = `notes-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.json`
+    const backupPath = join(backupDir, backupName)
+
+    mkdirSync(backupDir, { recursive: true })
+    writeFileSync(
+      backupPath,
+      JSON.stringify(
+        {
+          createdAt: new Date().toISOString(),
+          count: notes.length,
+          notes
+        },
+        null,
+        2
+      ),
+      'utf8'
+    )
+
+    const result: NotesBackupResult = {
+      path: backupPath,
+      count: notes.length
+    }
+
+    return result
   })
 
   ipcMain.handle('window:toggle-maximize', () => {

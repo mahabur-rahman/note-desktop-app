@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { NoteSummary } from '../../types/ui'
+import type { NoteSummary, SidebarViewMode } from '../../types/ui'
 import { ConfirmModal } from '../common/ConfirmModal'
 import { EditorPane } from '../editor/EditorPane'
 import { AppTopBar } from './AppTopBar'
@@ -15,9 +15,12 @@ interface NotesApi {
   create: () => Promise<NoteSummary>
   update: (payload: { id: string; title: string; content: string }) => Promise<NoteSummary | null>
   delete: (noteId: string) => Promise<boolean>
+  clear: () => Promise<number>
+  backup: () => Promise<{ path: string; count: number }>
 }
 
 const browserNotesStorageKey = 'online-notes:web-notes'
+const sidebarViewModeStorageKey = 'online-notes:sidebar-view-mode'
 
 function generateNoteId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -58,17 +61,57 @@ function saveBrowserNotes(notes: NoteSummary[]): void {
   }
 }
 
-function getNotesApi(): NotesApi | null {
-  const desktopApi = (window as Window & { api?: { notes?: NotesApi } }).api?.notes
+function getNotesApi(): Partial<NotesApi> | null {
+  const desktopApi = (window as Window & { api?: { notes?: Partial<NotesApi> } }).api?.notes
   return desktopApi ?? null
+}
+
+function loadSidebarViewMode(): SidebarViewMode {
+  try {
+    const rawValue = window.localStorage.getItem(sidebarViewModeStorageKey)
+    return rawValue === 'compact' ? 'compact' : 'detailed'
+  } catch {
+    return 'detailed'
+  }
+}
+
+function downloadBrowserBackup(notes: NoteSummary[]): string {
+  const backupName = `notes-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.json`
+  const backupBlob = new Blob(
+    [
+      JSON.stringify(
+        {
+          createdAt: new Date().toISOString(),
+          count: notes.length,
+          notes
+        },
+        null,
+        2
+      )
+    ],
+    { type: 'application/json' }
+  )
+
+  const downloadUrl = URL.createObjectURL(backupBlob)
+  const anchorElement = document.createElement('a')
+  anchorElement.href = downloadUrl
+  anchorElement.download = backupName
+  document.body.appendChild(anchorElement)
+  anchorElement.click()
+  anchorElement.remove()
+  URL.revokeObjectURL(downloadUrl)
+
+  return backupName
 }
 
 export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutProps): React.JSX.Element {
   const [notes, setNotes] = useState<NoteSummary[]>([])
   const [activeNoteId, setActiveNoteId] = useState<string>('')
+  const [sidebarViewMode, setSidebarViewMode] = useState<SidebarViewMode>(loadSidebarViewMode)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isExpandedView, setIsExpandedView] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [isClearModalOpen, setIsClearModalOpen] = useState(false)
   const updateTimeoutIdRef = useRef<number | null>(null)
   const activeNote = notes.find((note) => note.id === activeNoteId) ?? notes[0] ?? null
 
@@ -82,7 +125,8 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
     const loadNotes = async (): Promise<void> => {
       try {
         const notesApi = getNotesApi()
-        const storedNotes = notesApi ? await notesApi.list() : loadBrowserNotes()
+        const storedNotes =
+          notesApi && typeof notesApi.list === 'function' ? await notesApi.list() : loadBrowserNotes()
         setNotes(storedNotes)
         setActiveNoteId(storedNotes[0]?.id ?? '')
       } catch (error) {
@@ -121,19 +165,28 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
     }
   }, [])
 
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(sidebarViewModeStorageKey, sidebarViewMode)
+    } catch {
+      // Ignore localStorage failures in restricted contexts.
+    }
+  }, [sidebarViewMode])
+
   const queuePersistNote = (note: NoteSummary): void => {
     clearPendingUpdate()
     updateTimeoutIdRef.current = window.setTimeout(() => {
       const persistNote = async (): Promise<void> => {
         try {
           const notesApi = getNotesApi()
-          const updatedNote = notesApi
-            ? await notesApi.update({
+          const updatedNote =
+            notesApi && typeof notesApi.update === 'function'
+              ? await notesApi.update({
                 id: note.id,
                 title: note.title,
                 content: note.content
               })
-            : note
+              : note
 
           if (!updatedNote) return
           setNotes((prev) => {
@@ -206,7 +259,8 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
       try {
         clearPendingUpdate()
         const notesApi = getNotesApi()
-        const isDeleted = notesApi ? await notesApi.delete(deletingNoteId) : true
+        const isDeleted =
+          notesApi && typeof notesApi.delete === 'function' ? await notesApi.delete(deletingNoteId) : true
         if (!isDeleted) return
         setNotes((prev) => {
           const remainingNotes = prev.filter((note) => note.id !== deletingNoteId)
@@ -227,9 +281,10 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
     const createNote = async (): Promise<void> => {
       try {
         const notesApi = getNotesApi()
-        const createdNote = notesApi
-          ? await notesApi.create()
-          : {
+        const createdNote =
+          notesApi && typeof notesApi.create === 'function'
+            ? await notesApi.create()
+            : {
               id: generateNoteId(),
               title: 'Untitled Note',
               excerpt: 'Blank',
@@ -249,6 +304,60 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
     }
 
     void createNote()
+  }
+
+  const handleBackupNotes = (): void => {
+    const backupNotes = async (): Promise<void> => {
+      try {
+        const notesApi = getNotesApi()
+        if (notesApi && typeof notesApi.backup === 'function') {
+          const backupResult = await notesApi.backup()
+          window.alert(`Backup completed.\nSaved: ${backupResult.path}\nNotes: ${backupResult.count}`)
+          return
+        }
+
+        const notesForBackup =
+          notesApi && typeof notesApi.list === 'function' ? await notesApi.list() : notes
+        const backupName = downloadBrowserBackup(notesForBackup)
+        window.alert(`Backup downloaded as ${backupName}`)
+      } catch (error) {
+        console.error('Failed to backup notes', error)
+      }
+    }
+
+    void backupNotes()
+  }
+
+  const handleRequestClearNotes = (): void => {
+    if (notes.length === 0) return
+    setIsClearModalOpen(true)
+  }
+
+  const handleConfirmClearNotes = (): void => {
+    const clearNotes = async (): Promise<void> => {
+      try {
+        clearPendingUpdate()
+        const notesApi = getNotesApi()
+        if (notesApi && typeof notesApi.clear === 'function') {
+          await notesApi.clear()
+        } else if (notesApi && typeof notesApi.delete === 'function') {
+          const deleteNote = notesApi.delete
+          const currentNotes = notesApi && typeof notesApi.list === 'function' ? await notesApi.list() : notes
+          await Promise.all(currentNotes.map((note) => deleteNote(note.id)))
+        } else {
+          saveBrowserNotes([])
+        }
+
+        setNotes([])
+        setActiveNoteId('')
+      } catch (error) {
+        console.error('Failed to clear notes', error)
+      } finally {
+        setIsClearModalOpen(false)
+      }
+    }
+
+    void clearNotes()
   }
 
   return (
@@ -273,6 +382,10 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
             activeNoteId={activeNote?.id ?? ''}
             onCreateNote={handleCreateNote}
             onSelectNote={setActiveNoteId}
+            viewMode={sidebarViewMode}
+            onChangeViewMode={setSidebarViewMode}
+            onBackup={handleBackupNotes}
+            onClear={handleRequestClearNotes}
           />
         </div>
 
@@ -296,6 +409,14 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
         isOpen={isDeleteModalOpen}
         onConfirm={handleConfirmDeleteActiveNote}
         onCancel={() => setIsDeleteModalOpen(false)}
+      />
+
+      <ConfirmModal
+        title="Confirm"
+        message="Are you sure you want to clear all notes?"
+        isOpen={isClearModalOpen}
+        onConfirm={handleConfirmClearNotes}
+        onCancel={() => setIsClearModalOpen(false)}
       />
     </main>
   )

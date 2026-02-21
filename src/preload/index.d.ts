@@ -14,12 +14,19 @@ interface NoteUpdateInput {
   content: string
 }
 
+interface NotesBackupResult {
+  path: string
+  count: number
+}
+
 interface DesktopApi {
   notes: {
     list: () => Promise<NoteSummary[]>
     create: () => Promise<NoteSummary>
     update: (payload: NoteUpdateInput) => Promise<NoteSummary | null>
     delete: (noteId: string) => Promise<boolean>
+    clear: () => Promise<number>
+    backup: () => Promise<NotesBackupResult>
   }
 }
 

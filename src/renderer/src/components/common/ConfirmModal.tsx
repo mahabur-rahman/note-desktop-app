@@ -31,11 +31,7 @@ export function ConfirmModal({
   if (!isOpen) return null
 
   return (
-    <div
-      className="fixed inset-0 z-50 grid place-items-center bg-black/45 px-4"
-      onClick={onCancel}
-      aria-hidden="true"
-    >
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/45 px-4" onClick={onCancel}>
       <div
         role="dialog"
         aria-modal="true"

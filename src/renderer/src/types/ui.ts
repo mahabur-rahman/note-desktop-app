@@ -5,3 +5,5 @@ export interface NoteSummary {
   content: string
   relativeTime: string
 }
+
+export type SidebarViewMode = 'compact' | 'detailed'
