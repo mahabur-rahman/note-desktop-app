@@ -4,8 +4,11 @@ export const APP_TITLE = 'ONLINE NOTEPAD'
 
 export const MENU_ITEMS = ['File', 'Edit', 'Insert', 'Format', 'Tools', 'View', 'Help'] as const
 
-export const ACTIVE_NOTE: NoteSummary = {
-  title: 'Untitled Note',
-  excerpt: 'Blank',
-  relativeTime: 'just now'
-}
+export const INITIAL_NOTES: NoteSummary[] = [
+  {
+    id: 'note-1',
+    title: 'Untitled Note',
+    excerpt: 'Blank',
+    relativeTime: 'just now'
+  }
+]

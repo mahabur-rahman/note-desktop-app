@@ -3,10 +3,12 @@ import type { NoteSummary } from '../../types/ui'
 import { IconButton } from '../common/IconButton'
 
 interface NotesSidebarProps {
-  note: NoteSummary
+  notes: NoteSummary[]
+  activeNoteId: string
+  onSelectNote: (noteId: string) => void
 }
 
-export function NotesSidebar({ note }: NotesSidebarProps): React.JSX.Element {
+export function NotesSidebar({ notes, activeNoteId, onSelectNote }: NotesSidebarProps): React.JSX.Element {
   return (
     <aside className="flex h-full flex-col bg-[#f3f4f6]">
       <div className="border-b border-[#d9dee5]">
@@ -44,11 +46,25 @@ export function NotesSidebar({ note }: NotesSidebarProps): React.JSX.Element {
         </div>
       </div>
 
-      <article className="border-t border-[#d9dee5] bg-[#e6e7e9] p-4">
-        <h3 className="m-0 text-lg leading-[1.2] font-bold text-[#2f3440]">{note.title}</h3>
-        <p className="my-1 text-base text-[#444a56]">{note.excerpt}</p>
-        <span className="text-[15px] text-[#4f5562]">{note.relativeTime}</span>
-      </article>
+      {notes.length === 0 ? (
+        <div className="border-t border-[#d9dee5] p-4 text-[15px] text-[#3f4654]">No saved notes.</div>
+      ) : (
+        notes.map((note) => (
+          <button
+            key={note.id}
+            type="button"
+            onClick={() => onSelectNote(note.id)}
+            className={[
+              'w-full border-t border-[#d9dee5] p-4 text-left',
+              note.id === activeNoteId ? 'bg-[#e6e7e9]' : 'bg-[#f3f4f6]'
+            ].join(' ')}
+          >
+            <h3 className="m-0 text-lg leading-[1.2] font-bold text-[#2f3440]">{note.title}</h3>
+            <p className="my-1 text-base text-[#444a56]">{note.excerpt}</p>
+            <span className="text-[15px] text-[#4f5562]">{note.relativeTime}</span>
+          </button>
+        ))
+      )}
     </aside>
   )
 }
