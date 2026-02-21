@@ -7,6 +7,8 @@ interface NoteSummary {
   excerpt: string
   content: string
   relativeTime: string
+  createdAt: number
+  updatedAt: number
 }
 
 interface NoteUpdateInput {

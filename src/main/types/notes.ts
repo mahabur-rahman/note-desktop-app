@@ -4,12 +4,11 @@ export interface NoteRecord {
   excerpt: string
   content: string
   relativeTime: string
-}
-
-export interface NoteInsertRecord extends NoteRecord {
   createdAt: number
   updatedAt: number
 }
+
+export type NoteInsertRecord = NoteRecord
 
 export interface NoteUpdatePayload {
   id: string
@@ -17,10 +16,7 @@ export interface NoteUpdatePayload {
   content: string
 }
 
-export interface NotesBackupRecord extends NoteRecord {
-  createdAt: number
-  updatedAt: number
-}
+export type NotesBackupRecord = NoteRecord
 
 export interface NotesBackupResult {
   path: string

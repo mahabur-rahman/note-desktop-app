@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { FiAlignLeft, FiCheck, FiDownloadCloud, FiMoreVertical, FiPlus, FiSearch, FiX } from 'react-icons/fi'
-import type { NoteSummary, SidebarViewMode } from '../../types/ui'
+import type { NoteSummary, SidebarSortMode, SidebarViewMode } from '../../types/ui'
 import { IconButton } from '../common/IconButton'
 
 interface NotesSidebarProps {
@@ -10,6 +10,8 @@ interface NotesSidebarProps {
   onSelectNote: (noteId: string) => void
   viewMode: SidebarViewMode
   onChangeViewMode: (viewMode: SidebarViewMode) => void
+  sortMode: SidebarSortMode
+  onChangeSortMode: (sortMode: SidebarSortMode) => void
   onBackup: () => void
   onClear: () => void
   searchQuery: string
@@ -24,27 +26,36 @@ export function NotesSidebar({
   onSelectNote,
   viewMode,
   onChangeViewMode,
+  sortMode,
+  onChangeSortMode,
   onBackup,
   onClear,
   searchQuery,
   onSearchQueryChange,
   hasAnyNotes
 }: NotesSidebarProps): React.JSX.Element {
+  const [isSortMenuOpen, setIsSortMenuOpen] = useState(false)
   const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false)
+  const sortMenuRef = useRef<HTMLDivElement | null>(null)
   const actionsMenuRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
-    if (!isActionsMenuOpen) return
+    if (!isActionsMenuOpen && !isSortMenuOpen) return
 
     const handleClickOutside = (event: MouseEvent): void => {
-      if (!actionsMenuRef.current) return
-      if (actionsMenuRef.current.contains(event.target as Node)) return
+      const clickTarget = event.target as Node
+
+      const isInsideActionsMenu = Boolean(actionsMenuRef.current?.contains(clickTarget))
+      const isInsideSortMenu = Boolean(sortMenuRef.current?.contains(clickTarget))
+      if (isInsideActionsMenu || isInsideSortMenu) return
+
+      setIsSortMenuOpen(false)
       setIsActionsMenuOpen(false)
     }
 
     window.addEventListener('mousedown', handleClickOutside)
     return () => window.removeEventListener('mousedown', handleClickOutside)
-  }, [isActionsMenuOpen])
+  }, [isActionsMenuOpen, isSortMenuOpen])
 
   return (
     <aside className="flex h-full min-h-0 flex-col bg-[#f3f4f6]">
@@ -70,17 +81,64 @@ export function NotesSidebar({
         </div>
 
         <div className="relative flex h-10 items-center justify-between border-b border-[#d9dee5] bg-[#f4f5f7] px-3">
-          <IconButton
-            ariaLabel="Filter notes"
-            className="cursor-default bg-transparent p-0.5 text-lg text-[#646a75]"
-          >
-            <FiAlignLeft />
-          </IconButton>
+          <div ref={sortMenuRef}>
+            <IconButton
+              ariaLabel="Sort notes"
+              className="cursor-pointer bg-transparent p-0.5 text-lg text-[#646a75]"
+              onClick={() => {
+                setIsSortMenuOpen((prev) => !prev)
+                setIsActionsMenuOpen(false)
+              }}
+            >
+              <FiAlignLeft />
+            </IconButton>
+
+            {isSortMenuOpen && (
+              <div className="absolute top-[38px] left-0 z-20 min-w-[188px] border border-[#d2d7de] bg-[#f4f4f5] shadow-[0_10px_24px_rgba(25,32,45,0.12)]">
+                <button
+                  type="button"
+                  className="flex h-10 w-full items-center gap-3 px-4 text-left text-[15px] text-[#2f3642]"
+                  onClick={() => {
+                    onChangeSortMode('alphabetical')
+                    setIsSortMenuOpen(false)
+                  }}
+                >
+                  <span className="w-4 text-[18px]">{sortMode === 'alphabetical' ? <FiCheck /> : null}</span>
+                  <span>Alphabetical</span>
+                </button>
+                <button
+                  type="button"
+                  className="flex h-10 w-full items-center gap-3 px-4 text-left text-[15px] text-[#2f3642]"
+                  onClick={() => {
+                    onChangeSortMode('creation-date')
+                    setIsSortMenuOpen(false)
+                  }}
+                >
+                  <span className="w-4 text-[18px]">{sortMode === 'creation-date' ? <FiCheck /> : null}</span>
+                  <span>Creation date</span>
+                </button>
+                <button
+                  type="button"
+                  className="flex h-10 w-full items-center gap-3 px-4 text-left text-[15px] text-[#2f3642]"
+                  onClick={() => {
+                    onChangeSortMode('last-modified')
+                    setIsSortMenuOpen(false)
+                  }}
+                >
+                  <span className="w-4 text-[18px]">{sortMode === 'last-modified' ? <FiCheck /> : null}</span>
+                  <span>Last modified</span>
+                </button>
+              </div>
+            )}
+          </div>
           <div ref={actionsMenuRef}>
             <IconButton
               ariaLabel="More actions"
               className="cursor-pointer bg-transparent p-0.5 text-lg text-[#646a75]"
-              onClick={() => setIsActionsMenuOpen((prev) => !prev)}
+              onClick={() => {
+                setIsActionsMenuOpen((prev) => !prev)
+                setIsSortMenuOpen(false)
+              }}
             >
               <FiMoreVertical />
             </IconButton>

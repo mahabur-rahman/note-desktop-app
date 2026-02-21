@@ -53,7 +53,9 @@ export function openNotesDatabase(app: App): NotesDatabase {
       title,
       excerpt,
       content,
-      relative_time AS relativeTime
+      relative_time AS relativeTime,
+      created_at AS createdAt,
+      updated_at AS updatedAt
     FROM notes
     ORDER BY updated_at DESC, created_at DESC
   `)
@@ -72,6 +74,13 @@ export function openNotesDatabase(app: App): NotesDatabase {
       relative_time = @relative_time,
       updated_at = @updated_at
     WHERE id = @id
+  `)
+  const getNoteTimestampsStatement = db.prepare(`
+    SELECT
+      created_at AS createdAt
+    FROM notes
+    WHERE id = ?
+    LIMIT 1
   `)
 
   const deleteNoteStatement = db.prepare(`DELETE FROM notes WHERE id = ?`)
@@ -114,21 +123,23 @@ export function openNotesDatabase(app: App): NotesDatabase {
         updated_at: note.updatedAt
       })
 
-      const { createdAt: _createdAt, updatedAt: _updatedAt, ...createdNote } = note
-      return createdNote
+      return note
     },
     updateNote: (payload: NoteUpdatePayload) => {
       const noteId = typeof payload?.id === 'string' ? payload.id : ''
       if (!noteId) return null
+      const existingTimestamps = getNoteTimestampsStatement.get(noteId) as { createdAt: number } | undefined
+      if (!existingTimestamps) return null
 
       const title = typeof payload.title === 'string' ? payload.title.trim() : ''
       const content = typeof payload.content === 'string' ? payload.content : ''
-      const note: NoteRecord & { updatedAt: number } = {
+      const note: NoteRecord = {
         id: noteId,
         title,
         content,
         excerpt: buildExcerpt(content),
         relativeTime: 'just now',
+        createdAt: existingTimestamps.createdAt,
         updatedAt: Date.now()
       }
 
@@ -143,8 +154,7 @@ export function openNotesDatabase(app: App): NotesDatabase {
 
       if (result.changes === 0) return null
 
-      const { updatedAt: _updatedAt, ...updatedNote } = note
-      return updatedNote
+      return note
     },
     deleteNote: (noteId: string) => {
       const result = deleteNoteStatement.run(noteId)
