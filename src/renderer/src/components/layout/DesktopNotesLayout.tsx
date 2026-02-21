@@ -163,6 +163,7 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
     return secondNote.updatedAt - firstNote.updatedAt
   })
   const activeNote = notes.find((note) => note.id === activeNoteId) ?? notes[0] ?? null
+  const activeNoteCharacterCount = Array.from(activeNote?.content ?? '').length
 
   const clearPendingUpdate = (): void => {
     if (updateTimeoutIdRef.current === null) return
@@ -465,6 +466,7 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
             menuItems={menuItems}
             noteTitle={activeNote?.title ?? null}
             noteContent={activeNote?.content ?? null}
+            characterCount={activeNoteCharacterCount}
             onChangeNoteTitle={handleChangeActiveNoteTitle}
             onChangeNoteContent={handleChangeActiveNoteContent}
             onDeleteNote={handleRequestDeleteActiveNote}
