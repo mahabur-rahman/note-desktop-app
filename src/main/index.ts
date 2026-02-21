@@ -1,4 +1,6 @@
 import { app, BrowserWindow, ipcMain, nativeImage } from 'electron'
+import Database from 'better-sqlite3'
+import { randomUUID } from 'node:crypto'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'path'
@@ -12,6 +14,90 @@ app.commandLine.appendSwitch('log-level', '3')
 const linuxWmClass = 'online-notes'
 const defaultWindowSize = { width: 1200, height: 760 }
 const minimumWindowSize = { width: 900, height: 560 }
+
+interface NoteRecord {
+  id: string
+  title: string
+  excerpt: string
+  content: string
+  relativeTime: string
+}
+
+interface NoteInsertRecord extends NoteRecord {
+  createdAt: number
+  updatedAt: number
+}
+
+interface NoteUpdatePayload {
+  id: string
+  title: string
+  content: string
+}
+
+function buildExcerpt(content: string): string {
+  const normalizedContent = content.replace(/\s+/g, ' ').trim()
+  if (!normalizedContent) return 'Blank'
+  return normalizedContent.slice(0, 72)
+}
+
+function openNotesDatabase() {
+  const dbPath = join(app.getPath('userData'), 'notes.sqlite3')
+  const db = new Database(dbPath)
+  db.pragma('journal_mode = WAL')
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS notes (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      excerpt TEXT NOT NULL,
+      content TEXT NOT NULL DEFAULT '',
+      relative_time TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    )
+  `)
+  const tableColumns = db
+    .prepare(`PRAGMA table_info(notes)`)
+    .all() as Array<{ name: string }>
+
+  if (!tableColumns.some((column) => column.name === 'content')) {
+    db.exec(`ALTER TABLE notes ADD COLUMN content TEXT NOT NULL DEFAULT ''`)
+  }
+
+  if (!tableColumns.some((column) => column.name === 'updated_at')) {
+    db.exec(`ALTER TABLE notes ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0`)
+  }
+
+  const listNotes = db.prepare(`
+    SELECT
+      id,
+      title,
+      excerpt,
+      content,
+      relative_time AS relativeTime
+    FROM notes
+    ORDER BY updated_at DESC, created_at DESC
+  `)
+
+  const createNote = db.prepare(`
+    INSERT INTO notes (id, title, excerpt, content, relative_time, created_at, updated_at)
+    VALUES (@id, @title, @excerpt, @content, @relative_time, @created_at, @updated_at)
+  `)
+
+  const updateNote = db.prepare(`
+    UPDATE notes
+    SET
+      title = @title,
+      excerpt = @excerpt,
+      content = @content,
+      relative_time = @relative_time,
+      updated_at = @updated_at
+    WHERE id = @id
+  `)
+
+  const deleteNote = db.prepare(`DELETE FROM notes WHERE id = ?`)
+
+  return { listNotes, createNote, updateNote, deleteNote }
+}
 
 app.setName('Online Notes')
 if (process.platform === 'linux') {
@@ -90,6 +176,73 @@ function ensureLinuxDesktopEntry(): void {
 }
 
 app.whenReady().then(() => {
+  const notesDb = openNotesDatabase()
+
+  ipcMain.handle('notes:list', () => {
+    return notesDb.listNotes.all() as NoteRecord[]
+  })
+
+  ipcMain.handle('notes:create', () => {
+    const now = Date.now()
+    const note: NoteInsertRecord = {
+      id: randomUUID(),
+      title: 'Untitled Note',
+      excerpt: 'Blank',
+      content: '',
+      relativeTime: 'just now',
+      createdAt: now,
+      updatedAt: now
+    }
+
+    notesDb.createNote.run({
+      id: note.id,
+      title: note.title,
+      excerpt: note.excerpt,
+      content: note.content,
+      relative_time: note.relativeTime,
+      created_at: note.createdAt,
+      updated_at: note.updatedAt
+    })
+
+    const { createdAt: _createdAt, updatedAt: _updatedAt, ...createdNote } = note
+    return createdNote
+  })
+
+  ipcMain.handle('notes:update', (_event, payload: NoteUpdatePayload) => {
+    const noteId = typeof payload?.id === 'string' ? payload.id : ''
+    if (!noteId) return null
+
+    const title = typeof payload.title === 'string' ? payload.title.trim() : ''
+    const content = typeof payload.content === 'string' ? payload.content : ''
+    const note: NoteRecord & { updatedAt: number } = {
+      id: noteId,
+      title: title || 'Untitled Note',
+      content,
+      excerpt: buildExcerpt(content),
+      relativeTime: 'just now',
+      updatedAt: Date.now()
+    }
+
+    const result = notesDb.updateNote.run({
+      id: note.id,
+      title: note.title,
+      excerpt: note.excerpt,
+      content: note.content,
+      relative_time: note.relativeTime,
+      updated_at: note.updatedAt
+    })
+
+    if (result.changes === 0) return null
+
+    const { updatedAt: _updatedAt, ...updatedNote } = note
+    return updatedNote
+  })
+
+  ipcMain.handle('notes:delete', (_event, noteId: string) => {
+    const result = notesDb.deleteNote.run(noteId)
+    return result.changes > 0
+  })
+
   ipcMain.handle('window:toggle-maximize', () => {
     const targetWindow = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
     if (!targetWindow) return false

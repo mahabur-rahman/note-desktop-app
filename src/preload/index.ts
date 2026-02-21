@@ -1,7 +1,28 @@
-import { contextBridge } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
-const api = {}
+interface NoteSummary {
+  id: string
+  title: string
+  excerpt: string
+  content: string
+  relativeTime: string
+}
+
+interface NoteUpdateInput {
+  id: string
+  title: string
+  content: string
+}
+
+const api = {
+  notes: {
+    list: () => ipcRenderer.invoke('notes:list') as Promise<NoteSummary[]>,
+    create: () => ipcRenderer.invoke('notes:create') as Promise<NoteSummary>,
+    update: (payload: NoteUpdateInput) => ipcRenderer.invoke('notes:update', payload) as Promise<NoteSummary | null>,
+    delete: (noteId: string) => ipcRenderer.invoke('notes:delete', noteId) as Promise<boolean>
+  }
+}
 
 if (process.contextIsolated) {
   try {

@@ -5,16 +5,18 @@ import { IconButton } from '../common/IconButton'
 interface NotesSidebarProps {
   notes: NoteSummary[]
   activeNoteId: string
+  onCreateNote: () => void
   onSelectNote: (noteId: string) => void
 }
 
-export function NotesSidebar({ notes, activeNoteId, onSelectNote }: NotesSidebarProps): React.JSX.Element {
+export function NotesSidebar({ notes, activeNoteId, onCreateNote, onSelectNote }: NotesSidebarProps): React.JSX.Element {
   return (
     <aside className="flex h-full flex-col bg-[#f3f4f6]">
       <div className="border-b border-[#d9dee5]">
         <button
-          className="mx-3 my-4 inline-flex h-[52px] w-[calc(100%_-_24px)] cursor-default items-center justify-center gap-2 rounded bg-[#5165f7] text-base font-normal text-white"
+          className="mx-3 my-4 inline-flex h-[52px] w-[calc(100%_-_24px)] cursor-pointer items-center justify-center gap-2 rounded bg-[#5165f7] text-base font-normal text-white"
           type="button"
+          onClick={onCreateNote}
         >
           <FiPlus className="text-lg" />
           <span>Create new</span>
@@ -59,7 +61,7 @@ export function NotesSidebar({ notes, activeNoteId, onSelectNote }: NotesSidebar
               note.id === activeNoteId ? 'bg-[#e6e7e9]' : 'bg-[#f3f4f6]'
             ].join(' ')}
           >
-            <h3 className="m-0 text-lg leading-[1.2] font-bold text-[#2f3440]">{note.title}</h3>
+            <h3 className="m-0 text-lg leading-[1.2] font-bold text-[#2f3440]">{note.title || 'Untitled Note'}</h3>
             <p className="my-1 text-base text-[#444a56]">{note.excerpt}</p>
             <span className="text-[15px] text-[#4f5562]">{note.relativeTime}</span>
           </button>
