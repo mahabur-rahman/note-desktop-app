@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { FiMaximize2, FiMinimize2 } from 'react-icons/fi'
+import { FiCheck, FiMaximize2, FiMinimize2 } from 'react-icons/fi'
 import { IconButton } from '../common/IconButton'
 
 interface TopMenuProps {
@@ -23,7 +23,7 @@ export function TopMenu({
   useEffect(() => {
     if (!isViewMenuOpen) return
 
-    const handleClickOutside = (event: MouseEvent): void => {
+    const handlePointerDownOutside = (event: PointerEvent): void => {
       const clickTarget = event.target as Node
       if (viewMenuRef.current?.contains(clickTarget)) return
       setIsViewMenuOpen(false)
@@ -33,34 +33,43 @@ export function TopMenu({
       if (event.key === 'Escape') setIsViewMenuOpen(false)
     }
 
-    window.addEventListener('mousedown', handleClickOutside)
+    const handleWindowBlur = (): void => {
+      setIsViewMenuOpen(false)
+    }
+
+    window.addEventListener('pointerdown', handlePointerDownOutside, true)
     window.addEventListener('keydown', handleEscapeKey)
+    window.addEventListener('blur', handleWindowBlur)
     return () => {
-      window.removeEventListener('mousedown', handleClickOutside)
+      window.removeEventListener('pointerdown', handlePointerDownOutside, true)
       window.removeEventListener('keydown', handleEscapeKey)
+      window.removeEventListener('blur', handleWindowBlur)
     }
   }, [isViewMenuOpen])
 
   return (
     <header className="flex items-center justify-between border-b border-[#d9dee5] bg-[#f6f6f7] pr-2 pl-2.5 md:pr-2.5 md:pl-4">
-      <nav className="flex min-w-0 items-center gap-3 overflow-x-auto overflow-y-visible md:gap-5">
+      <nav className="flex min-w-0 flex-1 items-center gap-3 overflow-visible md:gap-5">
         {items.map((item) => (
           <div key={item} className="relative">
             {item === 'View' ? (
               <div ref={viewMenuRef}>
                 <button
-                  className="cursor-pointer whitespace-nowrap bg-transparent p-0 text-sm text-[#2f3440] md:text-[15px]"
+                  className={[
+                    'cursor-pointer whitespace-nowrap bg-transparent p-0 text-sm text-[#2f3440] md:text-[15px]',
+                    isViewMenuOpen ? 'text-[#1f232d]' : ''
+                  ].join(' ')}
                   type="button"
                   onClick={() => setIsViewMenuOpen((prev) => !prev)}
                 >
                   {item}
                 </button>
                 {isViewMenuOpen && (
-                  <div className="absolute top-7 left-0 z-20 min-w-[156px] border border-[#d2d7de] bg-[#f4f4f5] shadow-[0_10px_24px_rgba(25,32,45,0.12)]">
+                  <div className="absolute top-7 left-0 z-40 min-w-[186px] border border-[#d2d7de] bg-[#f4f4f5] shadow-[0_10px_24px_rgba(25,32,45,0.12)]">
                     <button
                       type="button"
                       className={[
-                        'flex h-10 w-full items-center px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]',
+                        'flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]',
                         isStatusBarVisible ? 'bg-[#eceeef]' : 'bg-transparent'
                       ].join(' ')}
                       onClick={() => {
@@ -68,16 +77,25 @@ export function TopMenu({
                         setIsViewMenuOpen(false)
                       }}
                     >
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">
+                        {isStatusBarVisible ? <FiCheck /> : null}
+                      </span>
                       <span>Status Bar</span>
                     </button>
                     <button
                       type="button"
-                      className="flex h-10 w-full items-center px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      className={[
+                        'flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]',
+                        isExpandedView ? 'bg-[#eceeef]' : 'bg-transparent'
+                      ].join(' ')}
                       onClick={() => {
                         onToggleExpandedView()
                         setIsViewMenuOpen(false)
                       }}
                     >
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">
+                        {isExpandedView ? <FiCheck /> : null}
+                      </span>
                       <span>Full Screen</span>
                     </button>
                   </div>
