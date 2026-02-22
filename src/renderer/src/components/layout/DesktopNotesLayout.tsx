@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { NoteSummary, SidebarSortMode, SidebarViewMode } from '../../types/ui'
+import type { EditorFontSettings, NoteSummary, SidebarSortMode, SidebarViewMode } from '../../types/ui'
 import { ConfirmModal } from '../common/ConfirmModal'
 import { EditorPane } from '../editor/EditorPane'
 import { AppTopBar } from './AppTopBar'
@@ -24,6 +24,16 @@ const sidebarViewModeStorageKey = 'online-notes:sidebar-view-mode'
 const sidebarSortModeStorageKey = 'online-notes:sidebar-sort-mode'
 const statusBarVisibleStorageKey = 'online-notes:status-bar-visible'
 const spellCheckEnabledStorageKey = 'online-notes:spell-check-enabled'
+const wordWrapEnabledStorageKey = 'online-notes:word-wrap-enabled'
+const editorFontSettingsStorageKey = 'online-notes:editor-font-settings'
+
+const defaultEditorFontSettings: EditorFontSettings = {
+  fontFamily: 'default',
+  fontSize: 14,
+  fontWeight: 400,
+  fontStyle: 'normal',
+  lineHeight: 1.5
+}
 
 function generateNoteId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -118,6 +128,53 @@ function loadSpellCheckEnabled(): boolean {
   }
 }
 
+function loadWordWrapEnabled(): boolean {
+  try {
+    const rawValue = window.localStorage.getItem(wordWrapEnabledStorageKey)
+    return rawValue !== 'false'
+  } catch {
+    return true
+  }
+}
+
+function loadEditorFontSettings(): EditorFontSettings {
+  try {
+    const rawValue = window.localStorage.getItem(editorFontSettingsStorageKey)
+    if (!rawValue) return defaultEditorFontSettings
+
+    const parsedValue = JSON.parse(rawValue) as Partial<EditorFontSettings>
+    const fontSize = [14, 16, 18, 20, 22].includes(Number(parsedValue.fontSize))
+      ? Number(parsedValue.fontSize)
+      : defaultEditorFontSettings.fontSize
+    const fontWeight = Number(parsedValue.fontWeight) === 700 ? 700 : 400
+    const fontStyle = parsedValue.fontStyle === 'italic' ? 'italic' : 'normal'
+    const lineHeight = [1, 1.15, 1.5, 2].includes(Number(parsedValue.lineHeight))
+      ? (Number(parsedValue.lineHeight) as 1 | 1.15 | 1.5 | 2)
+      : defaultEditorFontSettings.lineHeight
+
+    const allowedFontFamilies = [
+      'default',
+      'Arial, sans-serif',
+      '"Comic Sans MS", "Comic Sans", cursive',
+      '"Courier New", monospace',
+      'Georgia, serif'
+    ]
+    const fontFamily = allowedFontFamilies.includes(String(parsedValue.fontFamily))
+      ? String(parsedValue.fontFamily)
+      : defaultEditorFontSettings.fontFamily
+
+    return {
+      fontFamily,
+      fontSize,
+      fontWeight,
+      fontStyle,
+      lineHeight
+    }
+  } catch {
+    return defaultEditorFontSettings
+  }
+}
+
 function downloadBrowserBackup(notes: NoteSummary[]): string {
   const backupName = `notes-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.json`
   const backupBlob = new Blob(
@@ -157,6 +214,9 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
   const [isExpandedView, setIsExpandedView] = useState(false)
   const [isStatusBarVisible, setIsStatusBarVisible] = useState(loadStatusBarVisibility)
   const [isSpellCheckEnabled, setIsSpellCheckEnabled] = useState(loadSpellCheckEnabled)
+  const [isWordWrapEnabled, setIsWordWrapEnabled] = useState(loadWordWrapEnabled)
+  const [editorFontSettings, setEditorFontSettings] = useState<EditorFontSettings>(loadEditorFontSettings)
+  const [isFontSettingsOpen, setIsFontSettingsOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [isClearModalOpen, setIsClearModalOpen] = useState(false)
   const updateTimeoutIdRef = useRef<number | null>(null)
@@ -292,6 +352,22 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
 
     void syncSpellCheck()
   }, [isSpellCheckEnabled])
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(wordWrapEnabledStorageKey, String(isWordWrapEnabled))
+    } catch {
+      // Ignore localStorage failures in restricted contexts.
+    }
+  }, [isWordWrapEnabled])
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(editorFontSettingsStorageKey, JSON.stringify(editorFontSettings))
+    } catch {
+      // Ignore localStorage failures in restricted contexts.
+    }
+  }, [editorFontSettings])
 
   const queuePersistNote = (note: NoteSummary): void => {
     clearPendingUpdate()
@@ -530,6 +606,14 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
             characterCount={activeNoteCharacterCount}
             isStatusBarVisible={isStatusBarVisible}
             onToggleStatusBar={() => setIsStatusBarVisible((prev) => !prev)}
+            isWordWrapEnabled={isWordWrapEnabled}
+            onToggleWordWrap={() => setIsWordWrapEnabled((prev) => !prev)}
+            isFontSettingsOpen={isFontSettingsOpen}
+            onOpenFontSettings={() => setIsFontSettingsOpen(true)}
+            onCloseFontSettings={() => setIsFontSettingsOpen(false)}
+            editorFontSettings={editorFontSettings}
+            onChangeEditorFontSettings={setEditorFontSettings}
+            onResetEditorFontSettings={() => setEditorFontSettings(defaultEditorFontSettings)}
             isSpellCheckEnabled={isSpellCheckEnabled}
             onToggleSpellCheck={() => setIsSpellCheckEnabled((prev) => !prev)}
             onChangeNoteTitle={handleChangeActiveNoteTitle}
