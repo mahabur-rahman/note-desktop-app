@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { FiCheck, FiMaximize2, FiMinimize2 } from 'react-icons/fi'
+import { FiMaximize2, FiMinimize2 } from 'react-icons/fi'
 import { IconButton } from '../common/IconButton'
 
 interface TopMenuProps {
@@ -59,24 +59,25 @@ export function TopMenu({
                   <div className="absolute top-7 left-0 z-20 min-w-[156px] border border-[#d2d7de] bg-[#f4f4f5] shadow-[0_10px_24px_rgba(25,32,45,0.12)]">
                     <button
                       type="button"
-                      className="flex h-10 w-full items-center gap-3 px-4 text-left text-[15px] text-[#2f3642]"
+                      className={[
+                        'flex h-10 w-full items-center px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]',
+                        isStatusBarVisible ? 'bg-[#eceeef]' : 'bg-transparent'
+                      ].join(' ')}
                       onClick={() => {
                         onToggleStatusBar()
                         setIsViewMenuOpen(false)
                       }}
                     >
-                      <span className="w-4 text-[18px]">{isStatusBarVisible ? <FiCheck /> : null}</span>
                       <span>Status Bar</span>
                     </button>
                     <button
                       type="button"
-                      className="flex h-10 w-full items-center gap-3 px-4 text-left text-[15px] text-[#2f3642]"
+                      className="flex h-10 w-full items-center px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
                       onClick={() => {
                         onToggleExpandedView()
                         setIsViewMenuOpen(false)
                       }}
                     >
-                      <span className="w-4 text-[18px]">{isExpandedView ? <FiCheck /> : null}</span>
                       <span>Full Screen</span>
                     </button>
                   </div>
@@ -95,7 +96,7 @@ export function TopMenu({
       </nav>
 
       <IconButton
-        ariaLabel={isExpandedView ? 'Restore layout' : 'Expand layout'}
+        ariaLabel={isExpandedView ? 'Exit full screen' : 'Enter full screen'}
         className="cursor-pointer bg-transparent p-1 text-lg text-[#1f232d] md:text-[22px]"
         onClick={onToggleExpandedView}
       >

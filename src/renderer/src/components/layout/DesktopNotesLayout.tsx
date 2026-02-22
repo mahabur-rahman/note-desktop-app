@@ -102,9 +102,9 @@ function loadSidebarSortMode(): SidebarSortMode {
 function loadStatusBarVisibility(): boolean {
   try {
     const rawValue = window.localStorage.getItem(statusBarVisibleStorageKey)
-    return rawValue !== 'false'
+    return rawValue === 'true'
   } catch {
-    return true
+    return false
   }
 }
 
@@ -209,16 +209,16 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
   }, [activeNote, activeNoteId])
 
   useEffect(() => {
-    const syncMaximizedState = async (): Promise<void> => {
+    const syncFullScreenState = async (): Promise<void> => {
       try {
-        const isMaximized = await window.electron.ipcRenderer.invoke('window:is-maximized')
-        setIsExpandedView(Boolean(isMaximized))
+        const isFullScreen = await window.electron.ipcRenderer.invoke('window:is-full-screen')
+        setIsExpandedView(Boolean(isFullScreen))
       } catch {
         // Keep UI-only fallback state if Electron IPC is unavailable.
       }
     }
 
-    void syncMaximizedState()
+    void syncFullScreenState()
   }, [])
 
   useEffect(() => {
@@ -315,17 +315,17 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
   }
 
   const handleToggleExpandedView = (): void => {
-    const toggleWindow = async (): Promise<void> => {
+    const toggleFullScreen = async (): Promise<void> => {
       try {
-        const isMaximized = await window.electron.ipcRenderer.invoke('window:toggle-maximize')
-        setIsExpandedView(Boolean(isMaximized))
+        const isFullScreen = await window.electron.ipcRenderer.invoke('window:toggle-full-screen')
+        setIsExpandedView(Boolean(isFullScreen))
       } catch {
         // Fallback for non-Electron environments.
         setIsExpandedView((prev) => !prev)
       }
     }
 
-    void toggleWindow()
+    void toggleFullScreen()
   }
 
   const handleRequestDeleteActiveNote = (): void => {

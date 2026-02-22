@@ -60,7 +60,7 @@ export function EditorPane({
         />
       </div>
       {isStatusBarVisible && (
-        <div className="flex items-center justify-end px-3 pb-1 text-sm text-[#3d66f8] md:px-4">
+        <div className="flex items-center justify-start border-t border-[#d9dee5] px-3 text-sm text-[#3d66f8] md:px-4">
           <span>{`Characters: ${characterCount}`}</span>
         </div>
       )}
