@@ -72,19 +72,51 @@ function getNotesApi(): Partial<NotesApi> | null {
   return desktopApi ?? null
 }
 
+function normalizeTimestamp(rawValue: unknown, fallbackValue: number): number {
+  if (typeof rawValue !== 'number' || Number.isNaN(rawValue)) return fallbackValue
+  if (rawValue <= 0) return fallbackValue
+  if (rawValue < 1_000_000_000_000) return Math.trunc(rawValue * 1000)
+  return Math.trunc(rawValue)
+}
+
+function formatRelativeTime(timestamp: number, now: number = Date.now()): string {
+  const safeTimestamp = Number.isFinite(timestamp) ? timestamp : now
+  const diffMs = Math.max(0, now - safeTimestamp)
+
+  const minuteMs = 60 * 1000
+  const hourMs = 60 * minuteMs
+  const dayMs = 24 * hourMs
+
+  if (diffMs < minuteMs) return 'just now'
+
+  if (diffMs < hourMs) {
+    const minutes = Math.floor(diffMs / minuteMs)
+    return `${minutes} minute${minutes > 1 ? 's' : ''} ago`
+  }
+
+  if (diffMs < dayMs) {
+    const hours = Math.floor(diffMs / hourMs)
+    return `${hours} hour${hours > 1 ? 's' : ''} ago`
+  }
+
+  const days = Math.floor(diffMs / dayMs)
+  return `${days} day${days > 1 ? 's' : ''} ago`
+}
+
 function normalizeNotes(notes: Array<Partial<NoteSummary>>): NoteSummary[] {
   if (!Array.isArray(notes)) return []
   return notes.map((note) => {
     const now = Date.now()
-    const createdAt = typeof note.createdAt === 'number' ? note.createdAt : now
+    const createdAt = normalizeTimestamp(note.createdAt, now)
+    const updatedAt = normalizeTimestamp(note.updatedAt, createdAt)
     return {
       id: typeof note.id === 'string' ? note.id : generateNoteId(),
       title: typeof note.title === 'string' ? note.title : 'Untitled Note',
       excerpt: typeof note.excerpt === 'string' ? note.excerpt : 'Blank',
       content: typeof note.content === 'string' ? note.content : '',
-      relativeTime: typeof note.relativeTime === 'string' ? note.relativeTime : 'just now',
+      relativeTime: formatRelativeTime(updatedAt),
       createdAt,
-      updatedAt: typeof note.updatedAt === 'number' ? note.updatedAt : createdAt
+      updatedAt
     }
   })
 }
@@ -219,6 +251,7 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
   const [isFontSettingsOpen, setIsFontSettingsOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [isClearModalOpen, setIsClearModalOpen] = useState(false)
+  const [timeNow, setTimeNow] = useState(() => Date.now())
   const updateTimeoutIdRef = useRef<number | null>(null)
   const normalizedSearchQuery = searchQuery.trim().toLocaleLowerCase()
   const filteredNotes =
@@ -244,6 +277,10 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
 
     return secondNote.updatedAt - firstNote.updatedAt
   })
+  const notesForSidebar = sortedFilteredNotes.map((note) => ({
+    ...note,
+    relativeTime: formatRelativeTime(note.updatedAt, timeNow)
+  }))
   const activeNote = notes.find((note) => note.id === activeNoteId) ?? notes[0] ?? null
   const activeNoteCharacterCount = Array.from(activeNote?.content ?? '').length
 
@@ -309,6 +346,11 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
     return () => {
       clearPendingUpdate()
     }
+  }, [])
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => setTimeNow(Date.now()), 60 * 1000)
+    return () => window.clearInterval(intervalId)
   }, [])
 
   useEffect(() => {
@@ -582,7 +624,7 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
           ].join(' ')}
         >
           <NotesSidebar
-            notes={sortedFilteredNotes}
+            notes={notesForSidebar}
             activeNoteId={activeNote?.id ?? ''}
             onCreateNote={handleCreateNote}
             onSelectNote={setActiveNoteId}
