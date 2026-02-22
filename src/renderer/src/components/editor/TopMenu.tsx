@@ -8,6 +8,8 @@ interface TopMenuProps {
   onToggleExpandedView: () => void
   isStatusBarVisible: boolean
   onToggleStatusBar: () => void
+  isSpellCheckEnabled: boolean
+  onToggleSpellCheck: () => void
 }
 
 export function TopMenu({
@@ -15,26 +17,35 @@ export function TopMenu({
   isExpandedView,
   onToggleExpandedView,
   isStatusBarVisible,
-  onToggleStatusBar
+  onToggleStatusBar,
+  isSpellCheckEnabled,
+  onToggleSpellCheck
 }: TopMenuProps): React.JSX.Element {
   const [isViewMenuOpen, setIsViewMenuOpen] = useState(false)
+  const [isToolsMenuOpen, setIsToolsMenuOpen] = useState(false)
   const viewMenuRef = useRef<HTMLDivElement | null>(null)
+  const toolsMenuRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
-    if (!isViewMenuOpen) return
+    if (!isViewMenuOpen && !isToolsMenuOpen) return
 
     const handlePointerDownOutside = (event: PointerEvent): void => {
       const clickTarget = event.target as Node
       if (viewMenuRef.current?.contains(clickTarget)) return
+      if (toolsMenuRef.current?.contains(clickTarget)) return
       setIsViewMenuOpen(false)
+      setIsToolsMenuOpen(false)
     }
 
     const handleEscapeKey = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') setIsViewMenuOpen(false)
+      if (event.key !== 'Escape') return
+      setIsViewMenuOpen(false)
+      setIsToolsMenuOpen(false)
     }
 
     const handleWindowBlur = (): void => {
       setIsViewMenuOpen(false)
+      setIsToolsMenuOpen(false)
     }
 
     window.addEventListener('pointerdown', handlePointerDownOutside, true)
@@ -45,7 +56,7 @@ export function TopMenu({
       window.removeEventListener('keydown', handleEscapeKey)
       window.removeEventListener('blur', handleWindowBlur)
     }
-  }, [isViewMenuOpen])
+  }, [isToolsMenuOpen, isViewMenuOpen])
 
   return (
     <header className="flex items-center justify-between border-b border-[#d9dee5] bg-[#f6f6f7] pr-2 pl-2.5 md:pr-2.5 md:pl-4">
@@ -60,7 +71,10 @@ export function TopMenu({
                     isViewMenuOpen ? 'text-[#1f232d]' : ''
                   ].join(' ')}
                   type="button"
-                  onClick={() => setIsViewMenuOpen((prev) => !prev)}
+                  onClick={() => {
+                    setIsViewMenuOpen((prev) => !prev)
+                    setIsToolsMenuOpen(false)
+                  }}
                 >
                   {item}
                 </button>
@@ -97,6 +111,42 @@ export function TopMenu({
                         {isExpandedView ? <FiCheck /> : null}
                       </span>
                       <span>Full Screen</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : item === 'Tools' ? (
+              <div ref={toolsMenuRef}>
+                <button
+                  className={[
+                    'cursor-pointer whitespace-nowrap bg-transparent p-0 text-sm text-[#2f3440] md:text-[15px]',
+                    isToolsMenuOpen ? 'text-[#1f232d]' : ''
+                  ].join(' ')}
+                  type="button"
+                  onClick={() => {
+                    setIsToolsMenuOpen((prev) => !prev)
+                    setIsViewMenuOpen(false)
+                  }}
+                >
+                  {item}
+                </button>
+                {isToolsMenuOpen && (
+                  <div className="absolute top-7 left-0 z-40 min-w-[186px] border border-[#d2d7de] bg-[#f4f4f5] shadow-[0_10px_24px_rgba(25,32,45,0.12)]">
+                    <button
+                      type="button"
+                      className={[
+                        'flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]',
+                        isSpellCheckEnabled ? 'bg-[#eceeef]' : 'bg-transparent'
+                      ].join(' ')}
+                      onClick={() => {
+                        onToggleSpellCheck()
+                        setIsToolsMenuOpen(false)
+                      }}
+                    >
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">
+                        {isSpellCheckEnabled ? <FiCheck /> : null}
+                      </span>
+                      <span>Spell check</span>
                     </button>
                   </div>
                 )}

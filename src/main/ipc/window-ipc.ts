@@ -36,4 +36,19 @@ export function registerWindowIpcHandlers(): void {
     const targetWindow = getTargetWindow()
     return targetWindow?.isFullScreen() ?? false
   })
+
+  ipcMain.handle('window:set-spell-check-enabled', (_event, enabled: boolean) => {
+    const targetWindow = getTargetWindow()
+    if (!targetWindow) return false
+
+    const nextState = Boolean(enabled)
+    targetWindow.webContents.session.setSpellCheckerEnabled(nextState)
+    return nextState
+  })
+
+  ipcMain.handle('window:is-spell-check-enabled', () => {
+    const targetWindow = getTargetWindow()
+    if (!targetWindow) return false
+    return targetWindow.webContents.session.isSpellCheckerEnabled()
+  })
 }

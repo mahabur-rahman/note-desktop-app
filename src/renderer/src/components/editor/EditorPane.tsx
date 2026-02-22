@@ -8,6 +8,8 @@ interface EditorPaneProps {
   characterCount: number
   isStatusBarVisible: boolean
   onToggleStatusBar: () => void
+  isSpellCheckEnabled: boolean
+  onToggleSpellCheck: () => void
   onChangeNoteTitle: (title: string) => void
   onChangeNoteContent: (content: string) => void
   onDeleteNote: () => void
@@ -22,6 +24,8 @@ export function EditorPane({
   characterCount,
   isStatusBarVisible,
   onToggleStatusBar,
+  isSpellCheckEnabled,
+  onToggleSpellCheck,
   onChangeNoteTitle,
   onChangeNoteContent,
   onDeleteNote,
@@ -45,6 +49,8 @@ export function EditorPane({
         onToggleExpandedView={onToggleExpandedView}
         isStatusBarVisible={isStatusBarVisible}
         onToggleStatusBar={onToggleStatusBar}
+        isSpellCheckEnabled={isSpellCheckEnabled}
+        onToggleSpellCheck={onToggleSpellCheck}
       />
       <NoteTitleRow title={noteTitle} onChangeTitle={onChangeNoteTitle} onDeleteNote={onDeleteNote} />
       <div className="bg-[#f7f7f8] p-4 md:p-5">
@@ -56,6 +62,7 @@ export function EditorPane({
           placeholder="Write your note..."
           value={noteContent ?? ''}
           disabled={!hasNote}
+          spellCheck={isSpellCheckEnabled}
           onChange={(event) => onChangeNoteContent(event.target.value)}
         />
       </div>

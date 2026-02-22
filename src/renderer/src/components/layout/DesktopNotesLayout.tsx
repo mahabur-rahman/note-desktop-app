@@ -23,6 +23,7 @@ const browserNotesStorageKey = 'online-notes:web-notes'
 const sidebarViewModeStorageKey = 'online-notes:sidebar-view-mode'
 const sidebarSortModeStorageKey = 'online-notes:sidebar-sort-mode'
 const statusBarVisibleStorageKey = 'online-notes:status-bar-visible'
+const spellCheckEnabledStorageKey = 'online-notes:spell-check-enabled'
 
 function generateNoteId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -108,6 +109,15 @@ function loadStatusBarVisibility(): boolean {
   }
 }
 
+function loadSpellCheckEnabled(): boolean {
+  try {
+    const rawValue = window.localStorage.getItem(spellCheckEnabledStorageKey)
+    return rawValue !== 'false'
+  } catch {
+    return true
+  }
+}
+
 function downloadBrowserBackup(notes: NoteSummary[]): string {
   const backupName = `notes-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.json`
   const backupBlob = new Blob(
@@ -146,6 +156,7 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isExpandedView, setIsExpandedView] = useState(false)
   const [isStatusBarVisible, setIsStatusBarVisible] = useState(loadStatusBarVisibility)
+  const [isSpellCheckEnabled, setIsSpellCheckEnabled] = useState(loadSpellCheckEnabled)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [isClearModalOpen, setIsClearModalOpen] = useState(false)
   const updateTimeoutIdRef = useRef<number | null>(null)
@@ -222,6 +233,19 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
   }, [])
 
   useEffect(() => {
+    const syncSpellCheckState = async (): Promise<void> => {
+      try {
+        const isEnabled = await window.electron.ipcRenderer.invoke('window:is-spell-check-enabled')
+        setIsSpellCheckEnabled(Boolean(isEnabled))
+      } catch {
+        // Keep UI fallback state if Electron IPC is unavailable.
+      }
+    }
+
+    void syncSpellCheckState()
+  }, [])
+
+  useEffect(() => {
     return () => {
       clearPendingUpdate()
     }
@@ -250,6 +274,24 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
       // Ignore localStorage failures in restricted contexts.
     }
   }, [isStatusBarVisible])
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(spellCheckEnabledStorageKey, String(isSpellCheckEnabled))
+    } catch {
+      // Ignore localStorage failures in restricted contexts.
+    }
+
+    const syncSpellCheck = async (): Promise<void> => {
+      try {
+        await window.electron.ipcRenderer.invoke('window:set-spell-check-enabled', isSpellCheckEnabled)
+      } catch {
+        // Ignore IPC failures in non-Electron contexts.
+      }
+    }
+
+    void syncSpellCheck()
+  }, [isSpellCheckEnabled])
 
   const queuePersistNote = (note: NoteSummary): void => {
     clearPendingUpdate()
@@ -488,6 +530,8 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
             characterCount={activeNoteCharacterCount}
             isStatusBarVisible={isStatusBarVisible}
             onToggleStatusBar={() => setIsStatusBarVisible((prev) => !prev)}
+            isSpellCheckEnabled={isSpellCheckEnabled}
+            onToggleSpellCheck={() => setIsSpellCheckEnabled((prev) => !prev)}
             onChangeNoteTitle={handleChangeActiveNoteTitle}
             onChangeNoteContent={handleChangeActiveNoteContent}
             onDeleteNote={handleRequestDeleteActiveNote}
