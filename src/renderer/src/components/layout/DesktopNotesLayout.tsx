@@ -22,6 +22,7 @@ interface NotesApi {
 const browserNotesStorageKey = 'online-notes:web-notes'
 const sidebarViewModeStorageKey = 'online-notes:sidebar-view-mode'
 const sidebarSortModeStorageKey = 'online-notes:sidebar-sort-mode'
+const statusBarVisibleStorageKey = 'online-notes:status-bar-visible'
 
 function generateNoteId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -98,6 +99,15 @@ function loadSidebarSortMode(): SidebarSortMode {
   }
 }
 
+function loadStatusBarVisibility(): boolean {
+  try {
+    const rawValue = window.localStorage.getItem(statusBarVisibleStorageKey)
+    return rawValue !== 'false'
+  } catch {
+    return true
+  }
+}
+
 function downloadBrowserBackup(notes: NoteSummary[]): string {
   const backupName = `notes-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.json`
   const backupBlob = new Blob(
@@ -135,6 +145,7 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
   const [sidebarSortMode, setSidebarSortMode] = useState<SidebarSortMode>(loadSidebarSortMode)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isExpandedView, setIsExpandedView] = useState(false)
+  const [isStatusBarVisible, setIsStatusBarVisible] = useState(loadStatusBarVisibility)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [isClearModalOpen, setIsClearModalOpen] = useState(false)
   const updateTimeoutIdRef = useRef<number | null>(null)
@@ -231,6 +242,14 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
       // Ignore localStorage failures in restricted contexts.
     }
   }, [sidebarSortMode])
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(statusBarVisibleStorageKey, String(isStatusBarVisible))
+    } catch {
+      // Ignore localStorage failures in restricted contexts.
+    }
+  }, [isStatusBarVisible])
 
   const queuePersistNote = (note: NoteSummary): void => {
     clearPendingUpdate()
@@ -467,6 +486,8 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
             noteTitle={activeNote?.title ?? null}
             noteContent={activeNote?.content ?? null}
             characterCount={activeNoteCharacterCount}
+            isStatusBarVisible={isStatusBarVisible}
+            onToggleStatusBar={() => setIsStatusBarVisible((prev) => !prev)}
             onChangeNoteTitle={handleChangeActiveNoteTitle}
             onChangeNoteContent={handleChangeActiveNoteContent}
             onDeleteNote={handleRequestDeleteActiveNote}

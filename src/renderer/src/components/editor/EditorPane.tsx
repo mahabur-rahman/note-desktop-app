@@ -6,6 +6,8 @@ interface EditorPaneProps {
   noteTitle: string | null
   noteContent: string | null
   characterCount: number
+  isStatusBarVisible: boolean
+  onToggleStatusBar: () => void
   onChangeNoteTitle: (title: string) => void
   onChangeNoteContent: (content: string) => void
   onDeleteNote: () => void
@@ -18,6 +20,8 @@ export function EditorPane({
   noteTitle,
   noteContent,
   characterCount,
+  isStatusBarVisible,
+  onToggleStatusBar,
   onChangeNoteTitle,
   onChangeNoteContent,
   onDeleteNote,
@@ -27,8 +31,21 @@ export function EditorPane({
   const hasNote = noteTitle !== null
 
   return (
-    <section className="grid h-full min-h-[62dvh] grid-rows-[44px_54px_minmax(320px,1fr)_28px] bg-[#f8f8f9] md:min-h-0 md:grid-rows-[46px_62px_minmax(0,1fr)_28px]">
-      <TopMenu items={menuItems} isExpandedView={isExpandedView} onToggleExpandedView={onToggleExpandedView} />
+    <section
+      className={[
+        'grid h-full min-h-[62dvh] bg-[#f8f8f9] md:min-h-0',
+        isStatusBarVisible
+          ? 'grid-rows-[44px_54px_minmax(320px,1fr)_28px] md:grid-rows-[46px_62px_minmax(0,1fr)_28px]'
+          : 'grid-rows-[44px_54px_minmax(320px,1fr)] md:grid-rows-[46px_62px_minmax(0,1fr)]'
+      ].join(' ')}
+    >
+      <TopMenu
+        items={menuItems}
+        isExpandedView={isExpandedView}
+        onToggleExpandedView={onToggleExpandedView}
+        isStatusBarVisible={isStatusBarVisible}
+        onToggleStatusBar={onToggleStatusBar}
+      />
       <NoteTitleRow title={noteTitle} onChangeTitle={onChangeNoteTitle} onDeleteNote={onDeleteNote} />
       <div className="bg-[#f7f7f8] p-4 md:p-5">
         <textarea
@@ -42,9 +59,11 @@ export function EditorPane({
           onChange={(event) => onChangeNoteContent(event.target.value)}
         />
       </div>
-      <div className="flex items-center justify-end px-3 pb-1 text-sm text-[#3d66f8] md:px-4">
-        <span>{`Characters: ${characterCount}`}</span>
-      </div>
+      {isStatusBarVisible && (
+        <div className="flex items-center justify-end px-3 pb-1 text-sm text-[#3d66f8] md:px-4">
+          <span>{`Characters: ${characterCount}`}</span>
+        </div>
+      )}
     </section>
   )
 }
