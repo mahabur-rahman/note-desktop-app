@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { FiCheck, FiMaximize2, FiMinimize2, FiType } from 'react-icons/fi'
+import { FiCheck, FiClock, FiMaximize2, FiMinimize2, FiSmile, FiType } from 'react-icons/fi'
 import { IconButton } from '../common/IconButton'
 
 interface TopMenuProps {
@@ -30,21 +30,25 @@ export function TopMenu({
   const [isViewMenuOpen, setIsViewMenuOpen] = useState(false)
   const [isToolsMenuOpen, setIsToolsMenuOpen] = useState(false)
   const [isFormatMenuOpen, setIsFormatMenuOpen] = useState(false)
+  const [isInsertMenuOpen, setIsInsertMenuOpen] = useState(false)
   const viewMenuRef = useRef<HTMLDivElement | null>(null)
   const toolsMenuRef = useRef<HTMLDivElement | null>(null)
   const formatMenuRef = useRef<HTMLDivElement | null>(null)
+  const insertMenuRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
-    if (!isViewMenuOpen && !isToolsMenuOpen && !isFormatMenuOpen) return
+    if (!isViewMenuOpen && !isToolsMenuOpen && !isFormatMenuOpen && !isInsertMenuOpen) return
 
     const handlePointerDownOutside = (event: PointerEvent): void => {
       const clickTarget = event.target as Node
       if (viewMenuRef.current?.contains(clickTarget)) return
       if (toolsMenuRef.current?.contains(clickTarget)) return
       if (formatMenuRef.current?.contains(clickTarget)) return
+      if (insertMenuRef.current?.contains(clickTarget)) return
       setIsViewMenuOpen(false)
       setIsToolsMenuOpen(false)
       setIsFormatMenuOpen(false)
+      setIsInsertMenuOpen(false)
     }
 
     const handleEscapeKey = (event: KeyboardEvent): void => {
@@ -52,12 +56,14 @@ export function TopMenu({
       setIsViewMenuOpen(false)
       setIsToolsMenuOpen(false)
       setIsFormatMenuOpen(false)
+      setIsInsertMenuOpen(false)
     }
 
     const handleWindowBlur = (): void => {
       setIsViewMenuOpen(false)
       setIsToolsMenuOpen(false)
       setIsFormatMenuOpen(false)
+      setIsInsertMenuOpen(false)
     }
 
     window.addEventListener('pointerdown', handlePointerDownOutside, true)
@@ -68,7 +74,7 @@ export function TopMenu({
       window.removeEventListener('keydown', handleEscapeKey)
       window.removeEventListener('blur', handleWindowBlur)
     }
-  }, [isFormatMenuOpen, isToolsMenuOpen, isViewMenuOpen])
+  }, [isFormatMenuOpen, isInsertMenuOpen, isToolsMenuOpen, isViewMenuOpen])
 
   return (
     <header className="flex items-center justify-between border-b border-[#d9dee5] bg-[#f6f6f7] pr-2 pl-2.5 md:pr-2.5 md:pl-4">
@@ -87,6 +93,7 @@ export function TopMenu({
                     setIsViewMenuOpen((prev) => !prev)
                     setIsToolsMenuOpen(false)
                     setIsFormatMenuOpen(false)
+                    setIsInsertMenuOpen(false)
                   }}
                 >
                   {item}
@@ -140,6 +147,7 @@ export function TopMenu({
                     setIsToolsMenuOpen((prev) => !prev)
                     setIsViewMenuOpen(false)
                     setIsFormatMenuOpen(false)
+                    setIsInsertMenuOpen(false)
                   }}
                 >
                   {item}
@@ -165,6 +173,53 @@ export function TopMenu({
                   </div>
                 )}
               </div>
+            ) : item === 'Insert' ? (
+              <div ref={insertMenuRef}>
+                <button
+                  className={[
+                    'cursor-pointer whitespace-nowrap bg-transparent p-0 text-sm text-[#2f3440] md:text-[15px]',
+                    isInsertMenuOpen ? 'text-[#1f232d]' : ''
+                  ].join(' ')}
+                  type="button"
+                  onClick={() => {
+                    setIsInsertMenuOpen((prev) => !prev)
+                    setIsViewMenuOpen(false)
+                    setIsToolsMenuOpen(false)
+                    setIsFormatMenuOpen(false)
+                  }}
+                >
+                  {item}
+                </button>
+                {isInsertMenuOpen && (
+                  <div className="absolute top-7 left-0 z-40 min-w-[186px] border border-[#d2d7de] bg-[#f4f4f5] shadow-[0_10px_24px_rgba(25,32,45,0.12)]">
+                    <button
+                      type="button"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                    >
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">
+                        <FiClock />
+                      </span>
+                      <span>Date/Time</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                    >
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">Ω</span>
+                      <span>Characters</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                    >
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">
+                        <FiSmile />
+                      </span>
+                      <span>Emojis</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : item === 'Format' ? (
               <div ref={formatMenuRef}>
                 <button
@@ -177,6 +232,7 @@ export function TopMenu({
                     setIsFormatMenuOpen((prev) => !prev)
                     setIsViewMenuOpen(false)
                     setIsToolsMenuOpen(false)
+                    setIsInsertMenuOpen(false)
                   }}
                 >
                   {item}
