@@ -83,6 +83,17 @@ function escapeHtml(value: string): string {
   })
 }
 
+function formatPrintTimestamp(date: Date): string {
+  return date.toLocaleString('en-US', {
+    month: 'numeric',
+    day: 'numeric',
+    year: '2-digit',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  })
+}
+
 function loadBrowserNotes(): NoteSummary[] {
   try {
     const rawValue = window.localStorage.getItem(browserNotesStorageKey)
@@ -719,6 +730,7 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
 
     const printTitle = escapeHtml(activeNote.title || 'Untitled Note')
     const printContent = escapeHtml(activeNote.content || '')
+    const printTimestamp = escapeHtml(formatPrintTimestamp(new Date()))
     const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=900,height=700')
     if (!printWindow) return
 
@@ -729,21 +741,58 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
     <meta charset="UTF-8" />
     <title>${printTitle}</title>
     <style>
-      body { margin: 24px; font-family: Arial, sans-serif; color: #1f232d; }
-      h1 { margin: 0 0 14px; font-size: 22px; }
-      pre { margin: 0; white-space: pre-wrap; word-break: break-word; font-size: 14px; line-height: 1.45; }
+      @page { size: auto; margin: 20mm 16mm; }
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        color: #1f232d;
+        background: #fff;
+      }
+      .print-wrap {
+        min-height: 100vh;
+      }
+      .print-meta {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        align-items: center;
+        margin: 0 0 16px;
+        font-size: 12px;
+        color: #1f232d;
+      }
+      .print-meta-time {
+        justify-self: start;
+      }
+      .print-meta-title {
+        justify-self: center;
+        font-size: 12px;
+        color: #8e213a;
+      }
+      .print-content {
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-size: 34px;
+        line-height: 1.35;
+        font-style: italic;
+        font-weight: 700;
+      }
     </style>
   </head>
   <body>
-    <h1>${printTitle}</h1>
-    <pre>${printContent}</pre>
+    <main class="print-wrap">
+      <div class="print-meta">
+        <span class="print-meta-time">${printTimestamp}</span>
+        <span class="print-meta-title">${printTitle}</span>
+        <span></span>
+      </div>
+      <pre class="print-content">${printContent}</pre>
+    </main>
   </body>
 </html>`)
     printWindow.document.close()
     window.setTimeout(() => {
       printWindow.focus()
       printWindow.print()
-      printWindow.close()
     }, 60)
   }
 
