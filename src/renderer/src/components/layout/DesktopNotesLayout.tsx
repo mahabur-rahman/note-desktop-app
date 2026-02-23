@@ -29,6 +29,8 @@ const statusBarVisibleStorageKey = 'online-notes:status-bar-visible'
 const spellCheckEnabledStorageKey = 'online-notes:spell-check-enabled'
 const wordWrapEnabledStorageKey = 'online-notes:word-wrap-enabled'
 const editorFontSettingsStorageKey = 'online-notes:editor-font-settings'
+const privacyPolicyUrl = 'https://onlinenotepad.org/privacy'
+const shortcutsUrl = 'https://onlinenotepad.org/keyboard-shortcuts'
 
 const defaultEditorFontSettings: EditorFontSettings = {
   fontFamily: 'default',
@@ -81,169 +83,6 @@ function formatPrintTimestamp(date: Date): string {
     minute: '2-digit',
     hour12: true
   })
-}
-
-function buildHelpPageHtml(pageTitle: string, heading: string, contentHtml: string): string {
-  return `<!doctype html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>${pageTitle}</title>
-    <style>
-      body {
-        margin: 0;
-        background: #efeff1;
-        color: #1f2d45;
-        font-family: Arial, sans-serif;
-      }
-      .topbar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        height: 34px;
-        padding: 0 16px;
-        background: #0c1117;
-        color: #f4f7fb;
-        font-size: 11px;
-      }
-      .hero {
-        display: grid;
-        place-items: center;
-        min-height: 96px;
-        background: #3d5be0;
-        color: #f4f7fb;
-      }
-      .hero h1 {
-        margin: 0;
-        font-size: 34px;
-        font-weight: 500;
-      }
-      .content {
-        max-width: 680px;
-        margin: 0 auto;
-        padding: 28px 16px 44px;
-      }
-      .content h2 {
-        margin: 0 0 14px;
-        font-size: 36px;
-      }
-      .content h3 {
-        margin: 20px 0 8px;
-        font-size: 18px;
-      }
-      .content p {
-        margin: 0 0 12px;
-        font-size: 14px;
-        line-height: 1.55;
-      }
-      .shortcut-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 14px;
-      }
-      .shortcut-table th,
-      .shortcut-table td {
-        border: 1px solid #c9ced6;
-        padding: 9px 12px;
-        text-align: left;
-      }
-      .shortcut-table thead th {
-        background: #e8ebef;
-        font-weight: 700;
-      }
-      .shortcut-table tbody td:nth-child(2),
-      .shortcut-table tbody td:nth-child(3) {
-        text-align: center;
-      }
-    </style>
-  </head>
-  <body>
-    <header class="topbar">
-      <span>ONLINE NOTEPAD</span>
-      <span>HOME &nbsp;&nbsp; NOTEPAD</span>
-    </header>
-    <section class="hero">
-      <h1>${heading}</h1>
-    </section>
-    <main class="content">
-      ${contentHtml}
-    </main>
-  </body>
-</html>`
-}
-
-function openHelpPageInNewTab(pageTitle: string, heading: string, contentHtml: string): void {
-  const popupWindow = window.open('', '_blank', 'noopener,noreferrer,width=1100,height=900')
-  if (!popupWindow) return
-  popupWindow.document.open()
-  popupWindow.document.write(buildHelpPageHtml(pageTitle, heading, contentHtml))
-  popupWindow.document.close()
-}
-
-function getPrivacyPolicyContentHtml(): string {
-  return `
-    <h3>Consent</h3>
-    <p>By using our website, you hereby consent to our Privacy Policy and agree to its terms.</p>
-
-    <h3>Information We Collect</h3>
-    <p>When you use Online Notepad, we may collect limited technical details such as browser type, device information, and standard diagnostic logs for performance and reliability.</p>
-    <p>We do not ask for sensitive personal information to use basic note editing features.</p>
-
-    <h3>How We Use Information</h3>
-    <p>We use collected information to operate the service, improve editor performance, detect abuse, and maintain security.</p>
-    <p>Any analytics data is used in aggregated form to understand trends and improve usability.</p>
-
-    <h3>Log Files</h3>
-    <p>Online Notepad follows a standard procedure of using log files. These files may include IP address, browser type, ISP, date and time stamp, and referring/exit pages.</p>
-
-    <h3>Cookies</h3>
-    <p>Like most websites, we may use cookies to store preferences such as editor settings. You can disable cookies via browser settings, though some functionality may be affected.</p>
-
-    <h3>Third-Party Policies</h3>
-    <p>This Privacy Policy does not apply to other advertisers or websites. Please review the privacy policies of third-party services for more details.</p>
-
-    <h3>GDPR Data Protection Rights</h3>
-    <p>You have the right to access, rectify, erase, or restrict processing of your personal data where applicable by law.</p>
-
-    <h3>Children's Information</h3>
-    <p>Online Notepad does not knowingly collect personally identifiable information from children under 13.</p>
-
-    <h3>Contact Us</h3>
-    <p>If you have questions about this policy, contact: onlinenotepad.org@gmail.com</p>
-  `
-}
-
-function getShortcutsContentHtml(): string {
-  return `
-    <h2>Shortcuts</h2>
-    <p>Here is the complete list of key combinations to help you move faster while using Online Notepad.</p>
-    <table class="shortcut-table">
-      <thead>
-        <tr>
-          <th>Action</th>
-          <th>PC</th>
-          <th>Mac</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td>Open file</td><td>Ctrl + O</td><td>Command + O</td></tr>
-        <tr><td>Save</td><td>Ctrl + S</td><td>Command + S</td></tr>
-        <tr><td>Save As</td><td>Ctrl + Shift + S</td><td>Command + Shift + S</td></tr>
-        <tr><td>Print</td><td>Ctrl + P</td><td>Command + P</td></tr>
-        <tr><td>Undo</td><td>Ctrl + Z</td><td>Command + Z</td></tr>
-        <tr><td>Redo</td><td>Ctrl + Y</td><td>Command + Y</td></tr>
-        <tr><td>Cut selected text</td><td>Ctrl + X</td><td>Command + X</td></tr>
-        <tr><td>Copy selected text</td><td>Ctrl + C</td><td>Command + C</td></tr>
-        <tr><td>Highlight all</td><td>Ctrl + A</td><td>Command + A</td></tr>
-        <tr><td>Find and replace</td><td>Ctrl + Shift + R</td><td>Command + Shift + R</td></tr>
-        <tr><td>Insert date & time</td><td>Ctrl + Shift + D</td><td>Command + Shift + D</td></tr>
-        <tr><td>Open characters</td><td>Ctrl + Shift + C</td><td>Command + Shift + C</td></tr>
-        <tr><td>Open emojis</td><td>Ctrl + Shift + E</td><td>Command + Shift + E</td></tr>
-        <tr><td>Open font settings</td><td>Ctrl + Shift + G</td><td>Command + Shift + G</td></tr>
-        <tr><td>Toggle fullscreen</td><td>Ctrl + Shift + F</td><td>Command + Shift + F</td></tr>
-      </tbody>
-    </table>
-  `
 }
 
 function loadBrowserNotes(): NoteSummary[] {
@@ -896,12 +735,34 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
     })
   }
 
+  const openHelpUrl = (url: string): void => {
+    const openInBrowserTab = (): void => {
+      window.open(url, '_blank', 'noopener,noreferrer')
+    }
+
+    if (!window.electron?.ipcRenderer?.invoke) {
+      openInBrowserTab()
+      return
+    }
+
+    const openInDesktop = async (): Promise<void> => {
+      try {
+        const isOpened = await window.electron.ipcRenderer.invoke('window:open-external', url)
+        if (!isOpened) openInBrowserTab()
+      } catch {
+        openInBrowserTab()
+      }
+    }
+
+    void openInDesktop()
+  }
+
   const handleOpenShortcutsPage = (): void => {
-    openHelpPageInNewTab('Keyboard Shortcuts in Online Notepad', 'Keyboard Shortcuts in Online Notepad', getShortcutsContentHtml())
+    openHelpUrl(shortcutsUrl)
   }
 
   const handleOpenPrivacyPage = (): void => {
-    openHelpPageInNewTab('Privacy Policy', 'Privacy Policy', getPrivacyPolicyContentHtml())
+    openHelpUrl(privacyPolicyUrl)
   }
 
   const handleOpenAboutModal = (): void => {
