@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import type { EditorFontSettings } from '../../types/ui'
 import { EmojisModal } from './EmojisModal'
+import { FindReplaceModal, type FindReplacePayload } from './FindReplaceModal'
 import { FontSettingsModal } from './FontSettingsModal'
 import { NoteTitleRow } from './NoteTitleRow'
 import { SpecialCharactersModal } from './SpecialCharactersModal'
@@ -58,6 +59,28 @@ export function EditorPane({
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const [isSpecialCharactersOpen, setIsSpecialCharactersOpen] = useState(false)
   const [isEmojisOpen, setIsEmojisOpen] = useState(false)
+  const [isFindReplaceOpen, setIsFindReplaceOpen] = useState(false)
+
+  const focusTextarea = (): HTMLTextAreaElement | null => {
+    const textarea = textareaRef.current
+    if (!textarea) return null
+    textarea.focus()
+    return textarea
+  }
+
+  const getSelectionRange = (
+    textarea: HTMLTextAreaElement,
+    content: string
+  ): { start: number; end: number; normalizedStart: number; normalizedEnd: number } => {
+    const start = textarea.selectionStart ?? content.length
+    const end = textarea.selectionEnd ?? content.length
+    return {
+      start,
+      end,
+      normalizedStart: Math.min(start, end),
+      normalizedEnd: Math.max(start, end)
+    }
+  }
 
   const insertTextAtCursor = (insertValue: string): void => {
     if (!hasNote) return
@@ -106,6 +129,135 @@ export function EditorPane({
     setIsEmojisOpen(true)
   }
 
+  const handleUndo = (): void => {
+    if (!hasNote) return
+    if (!focusTextarea()) return
+    if (typeof document.execCommand === 'function') {
+      document.execCommand('undo')
+    }
+  }
+
+  const handleRedo = (): void => {
+    if (!hasNote) return
+    if (!focusTextarea()) return
+    if (typeof document.execCommand === 'function') {
+      document.execCommand('redo')
+    }
+  }
+
+  const handleCopy = (): void => {
+    if (!hasNote) return
+
+    const textarea = focusTextarea()
+    if (!textarea) return
+    const currentContent = noteContent ?? ''
+    const { normalizedStart, normalizedEnd } = getSelectionRange(textarea, currentContent)
+    if (normalizedStart === normalizedEnd) return
+
+    const selectedText = currentContent.slice(normalizedStart, normalizedEnd)
+    if (!selectedText) return
+
+    if (navigator.clipboard?.writeText) {
+      void navigator.clipboard.writeText(selectedText).catch(() => {
+        // Ignore clipboard permission failures.
+      })
+    }
+  }
+
+  const handleDeleteSelection = (): void => {
+    if (!hasNote) return
+
+    const textarea = focusTextarea()
+    if (!textarea) return
+    const currentContent = noteContent ?? ''
+    const { normalizedStart, normalizedEnd } = getSelectionRange(textarea, currentContent)
+
+    let nextContent = currentContent
+    let nextCursorPosition = normalizedStart
+
+    if (normalizedStart !== normalizedEnd) {
+      nextContent = currentContent.slice(0, normalizedStart) + currentContent.slice(normalizedEnd)
+    } else if (normalizedStart < currentContent.length) {
+      nextContent = currentContent.slice(0, normalizedStart) + currentContent.slice(normalizedStart + 1)
+    } else {
+      return
+    }
+
+    onChangeNoteContent(nextContent)
+    window.requestAnimationFrame(() => {
+      const target = textareaRef.current
+      if (!target) return
+      target.focus()
+      target.setSelectionRange(nextCursorPosition, nextCursorPosition)
+    })
+  }
+
+  const handleCut = (): void => {
+    if (!hasNote) return
+
+    const textarea = focusTextarea()
+    if (!textarea) return
+    const currentContent = noteContent ?? ''
+    const { normalizedStart, normalizedEnd } = getSelectionRange(textarea, currentContent)
+    if (normalizedStart === normalizedEnd) return
+
+    const selectedText = currentContent.slice(normalizedStart, normalizedEnd)
+    if (navigator.clipboard?.writeText) {
+      void navigator.clipboard.writeText(selectedText).catch(() => {
+        // Ignore clipboard permission failures.
+      })
+    }
+
+    const nextContent = currentContent.slice(0, normalizedStart) + currentContent.slice(normalizedEnd)
+    onChangeNoteContent(nextContent)
+    window.requestAnimationFrame(() => {
+      const target = textareaRef.current
+      if (!target) return
+      target.focus()
+      target.setSelectionRange(normalizedStart, normalizedStart)
+    })
+  }
+
+  const handleSelectAll = (): void => {
+    if (!hasNote) return
+
+    const textarea = focusTextarea()
+    if (!textarea) return
+    const currentContent = noteContent ?? ''
+    textarea.setSelectionRange(0, currentContent.length)
+  }
+
+  const handleOpenFindReplace = (): void => {
+    if (!hasNote) return
+    setIsFindReplaceOpen(true)
+  }
+
+  const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+  const handleFindReplace = ({ findText, replaceText, matchCase, wholeWords }: FindReplacePayload): void => {
+    if (!hasNote) return
+
+    const normalizedFindText = findText.trim()
+    if (!normalizedFindText) return
+
+    const currentContent = noteContent ?? ''
+    const escapedFindText = escapeRegExp(normalizedFindText)
+    const pattern = wholeWords ? `\\b${escapedFindText}\\b` : escapedFindText
+    const flags = matchCase ? 'g' : 'gi'
+    const replaceRegex = new RegExp(pattern, flags)
+    const matches = currentContent.match(replaceRegex)
+
+    if (!matches || matches.length === 0) return
+
+    const nextContent = currentContent.replace(replaceRegex, replaceText)
+    onChangeNoteContent(nextContent)
+    window.requestAnimationFrame(() => {
+      const target = textareaRef.current
+      if (!target) return
+      target.focus()
+    })
+  }
+
   return (
     <>
       <section
@@ -127,6 +279,13 @@ export function EditorPane({
           onInsertDateTime={handleInsertDateTime}
           onOpenSpecialCharacters={handleOpenSpecialCharacters}
           onOpenEmojis={handleOpenEmojis}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          onCut={handleCut}
+          onCopy={handleCopy}
+          onDeleteSelection={handleDeleteSelection}
+          onSelectAll={handleSelectAll}
+          onOpenFindReplace={handleOpenFindReplace}
           onOpenFontSettings={onOpenFontSettings}
           isSpellCheckEnabled={isSpellCheckEnabled}
           onToggleSpellCheck={onToggleSpellCheck}
@@ -180,6 +339,12 @@ export function EditorPane({
         isOpen={isEmojisOpen}
         onClose={() => setIsEmojisOpen(false)}
         onInsert={(emoji) => insertTextAtCursor(emoji)}
+      />
+
+      <FindReplaceModal
+        isOpen={isFindReplaceOpen}
+        onClose={() => setIsFindReplaceOpen(false)}
+        onReplace={handleFindReplace}
       />
     </>
   )

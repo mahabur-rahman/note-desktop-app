@@ -1,5 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
-import { FiCheck, FiClock, FiMaximize2, FiMinimize2, FiSmile, FiType } from 'react-icons/fi'
+import {
+  FiCheck,
+  FiCheckSquare,
+  FiClock,
+  FiCopy,
+  FiCornerUpLeft,
+  FiCornerUpRight,
+  FiMaximize2,
+  FiMinimize2,
+  FiScissors,
+  FiSearch,
+  FiSmile,
+  FiType,
+  FiX
+} from 'react-icons/fi'
 import { IconButton } from '../common/IconButton'
 
 interface TopMenuProps {
@@ -13,6 +27,13 @@ interface TopMenuProps {
   onInsertDateTime: () => void
   onOpenSpecialCharacters: () => void
   onOpenEmojis: () => void
+  onUndo: () => void
+  onRedo: () => void
+  onCut: () => void
+  onCopy: () => void
+  onDeleteSelection: () => void
+  onSelectAll: () => void
+  onOpenFindReplace: () => void
   onOpenFontSettings: () => void
   isSpellCheckEnabled: boolean
   onToggleSpellCheck: () => void
@@ -29,28 +50,39 @@ export function TopMenu({
   onInsertDateTime,
   onOpenSpecialCharacters,
   onOpenEmojis,
+  onUndo,
+  onRedo,
+  onCut,
+  onCopy,
+  onDeleteSelection,
+  onSelectAll,
+  onOpenFindReplace,
   onOpenFontSettings,
   isSpellCheckEnabled,
   onToggleSpellCheck
 }: TopMenuProps): React.JSX.Element {
+  const [isEditMenuOpen, setIsEditMenuOpen] = useState(false)
   const [isViewMenuOpen, setIsViewMenuOpen] = useState(false)
   const [isToolsMenuOpen, setIsToolsMenuOpen] = useState(false)
   const [isFormatMenuOpen, setIsFormatMenuOpen] = useState(false)
   const [isInsertMenuOpen, setIsInsertMenuOpen] = useState(false)
+  const editMenuRef = useRef<HTMLDivElement | null>(null)
   const viewMenuRef = useRef<HTMLDivElement | null>(null)
   const toolsMenuRef = useRef<HTMLDivElement | null>(null)
   const formatMenuRef = useRef<HTMLDivElement | null>(null)
   const insertMenuRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
-    if (!isViewMenuOpen && !isToolsMenuOpen && !isFormatMenuOpen && !isInsertMenuOpen) return
+    if (!isEditMenuOpen && !isViewMenuOpen && !isToolsMenuOpen && !isFormatMenuOpen && !isInsertMenuOpen) return
 
     const handlePointerDownOutside = (event: PointerEvent): void => {
       const clickTarget = event.target as Node
+      if (editMenuRef.current?.contains(clickTarget)) return
       if (viewMenuRef.current?.contains(clickTarget)) return
       if (toolsMenuRef.current?.contains(clickTarget)) return
       if (formatMenuRef.current?.contains(clickTarget)) return
       if (insertMenuRef.current?.contains(clickTarget)) return
+      setIsEditMenuOpen(false)
       setIsViewMenuOpen(false)
       setIsToolsMenuOpen(false)
       setIsFormatMenuOpen(false)
@@ -59,6 +91,7 @@ export function TopMenu({
 
     const handleEscapeKey = (event: KeyboardEvent): void => {
       if (event.key !== 'Escape') return
+      setIsEditMenuOpen(false)
       setIsViewMenuOpen(false)
       setIsToolsMenuOpen(false)
       setIsFormatMenuOpen(false)
@@ -66,6 +99,7 @@ export function TopMenu({
     }
 
     const handleWindowBlur = (): void => {
+      setIsEditMenuOpen(false)
       setIsViewMenuOpen(false)
       setIsToolsMenuOpen(false)
       setIsFormatMenuOpen(false)
@@ -80,7 +114,7 @@ export function TopMenu({
       window.removeEventListener('keydown', handleEscapeKey)
       window.removeEventListener('blur', handleWindowBlur)
     }
-  }, [isFormatMenuOpen, isInsertMenuOpen, isToolsMenuOpen, isViewMenuOpen])
+  }, [isEditMenuOpen, isFormatMenuOpen, isInsertMenuOpen, isToolsMenuOpen, isViewMenuOpen])
 
   return (
     <header className="flex items-center justify-between border-b border-[#d9dee5] bg-[#f6f6f7] pr-2 pl-2.5 md:pr-2.5 md:pl-4">
@@ -97,6 +131,7 @@ export function TopMenu({
                   type="button"
                   onClick={() => {
                     setIsViewMenuOpen((prev) => !prev)
+                    setIsEditMenuOpen(false)
                     setIsToolsMenuOpen(false)
                     setIsFormatMenuOpen(false)
                     setIsInsertMenuOpen(false)
@@ -141,6 +176,122 @@ export function TopMenu({
                   </div>
                 )}
               </div>
+            ) : item === 'Edit' ? (
+              <div ref={editMenuRef}>
+                <button
+                  className={[
+                    'cursor-pointer whitespace-nowrap bg-transparent p-0 text-sm text-[#2f3440] md:text-[15px]',
+                    isEditMenuOpen ? 'text-[#1f232d]' : ''
+                  ].join(' ')}
+                  type="button"
+                  onClick={() => {
+                    setIsEditMenuOpen((prev) => !prev)
+                    setIsViewMenuOpen(false)
+                    setIsToolsMenuOpen(false)
+                    setIsFormatMenuOpen(false)
+                    setIsInsertMenuOpen(false)
+                  }}
+                >
+                  {item}
+                </button>
+                {isEditMenuOpen && (
+                  <div className="absolute top-7 left-0 z-40 min-w-[186px] border border-[#d2d7de] bg-[#f4f4f5] shadow-[0_10px_24px_rgba(25,32,45,0.12)]">
+                    <button
+                      type="button"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      onClick={() => {
+                        onUndo()
+                        setIsEditMenuOpen(false)
+                      }}
+                    >
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">
+                        <FiCornerUpLeft />
+                      </span>
+                      <span>Undo</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      onClick={() => {
+                        onRedo()
+                        setIsEditMenuOpen(false)
+                      }}
+                    >
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">
+                        <FiCornerUpRight />
+                      </span>
+                      <span>Redo</span>
+                    </button>
+                    <div className="h-px w-full bg-[#d8dde4]" />
+                    <button
+                      type="button"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      onClick={() => {
+                        onCut()
+                        setIsEditMenuOpen(false)
+                      }}
+                    >
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">
+                        <FiScissors />
+                      </span>
+                      <span>Cut</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      onClick={() => {
+                        onCopy()
+                        setIsEditMenuOpen(false)
+                      }}
+                    >
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">
+                        <FiCopy />
+                      </span>
+                      <span>Copy</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      onClick={() => {
+                        onDeleteSelection()
+                        setIsEditMenuOpen(false)
+                      }}
+                    >
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">
+                        <FiX />
+                      </span>
+                      <span>Delete</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      onClick={() => {
+                        onSelectAll()
+                        setIsEditMenuOpen(false)
+                      }}
+                    >
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">
+                        <FiCheckSquare />
+                      </span>
+                      <span>Select All</span>
+                    </button>
+                    <div className="h-px w-full bg-[#d8dde4]" />
+                    <button
+                      type="button"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      onClick={() => {
+                        onOpenFindReplace()
+                        setIsEditMenuOpen(false)
+                      }}
+                    >
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">
+                        <FiSearch />
+                      </span>
+                      <span>Find &amp; Replace</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : item === 'Tools' ? (
               <div ref={toolsMenuRef}>
                 <button
@@ -151,6 +302,7 @@ export function TopMenu({
                   type="button"
                   onClick={() => {
                     setIsToolsMenuOpen((prev) => !prev)
+                    setIsEditMenuOpen(false)
                     setIsViewMenuOpen(false)
                     setIsFormatMenuOpen(false)
                     setIsInsertMenuOpen(false)
@@ -189,6 +341,7 @@ export function TopMenu({
                   type="button"
                   onClick={() => {
                     setIsInsertMenuOpen((prev) => !prev)
+                    setIsEditMenuOpen(false)
                     setIsViewMenuOpen(false)
                     setIsToolsMenuOpen(false)
                     setIsFormatMenuOpen(false)
@@ -248,6 +401,7 @@ export function TopMenu({
                   type="button"
                   onClick={() => {
                     setIsFormatMenuOpen((prev) => !prev)
+                    setIsEditMenuOpen(false)
                     setIsViewMenuOpen(false)
                     setIsToolsMenuOpen(false)
                     setIsInsertMenuOpen(false)
