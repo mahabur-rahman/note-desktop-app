@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useReactToPrint } from 'react-to-print'
 import type { EditorFontSettings, NoteSummary, SidebarSortMode, SidebarViewMode } from '../../types/ui'
 import { ConfirmModal } from '../common/ConfirmModal'
 import { SaveAsModal } from '../common/SaveAsModal'
@@ -68,19 +69,6 @@ function deriveNoteTitleFromFileName(fileName: string): string {
 
 function ensureTxtExtension(fileName: string): string {
   return fileName.toLowerCase().endsWith('.txt') ? fileName : `${fileName}.txt`
-}
-
-function escapeHtml(value: string): string {
-  return value.replace(/[&<>"']/g, (character) => {
-    const replacements: Record<string, string> = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;'
-    }
-    return replacements[character] ?? character
-  })
 }
 
 function formatPrintTimestamp(date: Date): string {
@@ -299,8 +287,10 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
   const [isClearModalOpen, setIsClearModalOpen] = useState(false)
   const [isSaveAsModalOpen, setIsSaveAsModalOpen] = useState(false)
   const [saveAsFileName, setSaveAsFileName] = useState('')
+  const [printTimestamp, setPrintTimestamp] = useState('')
   const [timeNow, setTimeNow] = useState(() => Date.now())
   const updateTimeoutIdRef = useRef<number | null>(null)
+  const printContentRef = useRef<HTMLDivElement | null>(null)
   const normalizedSearchQuery = searchQuery.trim().toLocaleLowerCase()
   const filteredNotes =
     normalizedSearchQuery === ''
@@ -331,6 +321,13 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
   }))
   const activeNote = notes.find((note) => note.id === activeNoteId) ?? notes[0] ?? null
   const activeNoteCharacterCount = Array.from(activeNote?.content ?? '').length
+  const printTitle = activeNote?.title?.trim() || 'Untitled Note'
+  const printContent = activeNote?.content ?? ''
+
+  const reactToPrint = useReactToPrint({
+    contentRef: printContentRef,
+    documentTitle: printTitle
+  })
 
   const clearPendingUpdate = (): void => {
     if (updateTimeoutIdRef.current === null) return
@@ -728,72 +725,10 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
   const handleFilePrint = (): void => {
     if (!activeNote) return
 
-    const printTitle = escapeHtml(activeNote.title || 'Untitled Note')
-    const printContent = escapeHtml(activeNote.content || '')
-    const printTimestamp = escapeHtml(formatPrintTimestamp(new Date()))
-    const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=900,height=700')
-    if (!printWindow) return
-
-    printWindow.document.open()
-    printWindow.document.write(`<!doctype html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>${printTitle}</title>
-    <style>
-      @page { size: auto; margin: 20mm 16mm; }
-      body {
-        margin: 0;
-        font-family: Arial, sans-serif;
-        color: #1f232d;
-        background: #fff;
-      }
-      .print-wrap {
-        min-height: 100vh;
-      }
-      .print-meta {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
-        align-items: center;
-        margin: 0 0 16px;
-        font-size: 12px;
-        color: #1f232d;
-      }
-      .print-meta-time {
-        justify-self: start;
-      }
-      .print-meta-title {
-        justify-self: center;
-        font-size: 12px;
-        color: #8e213a;
-      }
-      .print-content {
-        margin: 0;
-        white-space: pre-wrap;
-        word-break: break-word;
-        font-size: 34px;
-        line-height: 1.35;
-        font-style: italic;
-        font-weight: 700;
-      }
-    </style>
-  </head>
-  <body>
-    <main class="print-wrap">
-      <div class="print-meta">
-        <span class="print-meta-time">${printTimestamp}</span>
-        <span class="print-meta-title">${printTitle}</span>
-        <span></span>
-      </div>
-      <pre class="print-content">${printContent}</pre>
-    </main>
-  </body>
-</html>`)
-    printWindow.document.close()
-    window.setTimeout(() => {
-      printWindow.focus()
-      printWindow.print()
-    }, 60)
+    setPrintTimestamp(formatPrintTimestamp(new Date()))
+    window.requestAnimationFrame(() => {
+      reactToPrint()
+    })
   }
 
   const handleBackupNotes = (): void => {
@@ -940,6 +875,68 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
         onSave={handleConfirmSaveAs}
         onCancel={handleCancelSaveAs}
       />
+
+      <div ref={printContentRef} className="app-print-note-content">
+        <style>{`
+          .app-print-note-content {
+            overflow: hidden;
+            height: 0;
+          }
+
+          @media print {
+            .app-print-note-content {
+              overflow: visible !important;
+              height: auto !important;
+            }
+
+            @page {
+              size: auto;
+              margin: 20mm 16mm;
+            }
+
+            .app-print-note-page {
+              font-family: Arial, sans-serif;
+              color: #1f232d;
+              background: #ffffff;
+            }
+
+            .app-print-note-meta {
+              display: grid;
+              grid-template-columns: 1fr 1fr 1fr;
+              align-items: center;
+              margin: 0 0 16px;
+              font-size: 12px;
+            }
+
+            .app-print-note-time {
+              justify-self: start;
+            }
+
+            .app-print-note-title {
+              justify-self: center;
+              color: #8e213a;
+            }
+
+            .app-print-note-body {
+              margin: 0;
+              white-space: pre-wrap;
+              word-break: break-word;
+              font-size: 34px;
+              line-height: 1.35;
+              font-style: italic;
+              font-weight: 700;
+            }
+          }
+        `}</style>
+        <main className="app-print-note-page">
+          <div className="app-print-note-meta">
+            <span className="app-print-note-time">{printTimestamp || formatPrintTimestamp(new Date())}</span>
+            <span className="app-print-note-title">{printTitle}</span>
+            <span />
+          </div>
+          <pre className="app-print-note-body">{printContent}</pre>
+        </main>
+      </div>
     </main>
   )
 }
