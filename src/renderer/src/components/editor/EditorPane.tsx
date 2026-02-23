@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { EditorFontSettings } from '../../types/ui'
 import { EmojisModal } from './EmojisModal'
 import { FindReplaceModal, type FindReplacePayload } from './FindReplaceModal'
@@ -57,9 +57,11 @@ export function EditorPane({
   const hasNote = noteTitle !== null
   const resolvedFontFamily = editorFontSettings.fontFamily === 'default' ? undefined : editorFontSettings.fontFamily
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const actionToastTimeoutRef = useRef<number | null>(null)
   const [isSpecialCharactersOpen, setIsSpecialCharactersOpen] = useState(false)
   const [isEmojisOpen, setIsEmojisOpen] = useState(false)
   const [isFindReplaceOpen, setIsFindReplaceOpen] = useState(false)
+  const [actionToastMessage, setActionToastMessage] = useState<string | null>(null)
 
   const focusTextarea = (): HTMLTextAreaElement | null => {
     const textarea = textareaRef.current
@@ -74,6 +76,35 @@ export function EditorPane({
     if (typeof document.execCommand !== 'function') return false
     return document.execCommand(command)
   }
+
+  const restoreSelection = (selectionStart: number, selectionEnd: number): void => {
+    window.requestAnimationFrame(() => {
+      const textarea = textareaRef.current
+      if (!textarea) return
+      textarea.focus()
+      textarea.setSelectionRange(selectionStart, selectionEnd)
+    })
+  }
+
+  const showActionToast = (message: string): void => {
+    if (actionToastTimeoutRef.current !== null) {
+      window.clearTimeout(actionToastTimeoutRef.current)
+      actionToastTimeoutRef.current = null
+    }
+
+    setActionToastMessage(message)
+    actionToastTimeoutRef.current = window.setTimeout(() => {
+      setActionToastMessage(null)
+      actionToastTimeoutRef.current = null
+    }, 3000)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (actionToastTimeoutRef.current === null) return
+      window.clearTimeout(actionToastTimeoutRef.current)
+    }
+  }, [])
 
   const getSelectionRange = (
     textarea: HTMLTextAreaElement,
@@ -148,7 +179,6 @@ export function EditorPane({
 
   const handleCopy = (): void => {
     if (!hasNote) return
-    if (executeTextareaCommand('copy')) return
 
     const textarea = focusTextarea()
     if (!textarea) return
@@ -159,24 +189,49 @@ export function EditorPane({
     const selectedText = currentContent.slice(normalizedStart, normalizedEnd)
     if (!selectedText) return
 
-    if (navigator.clipboard?.writeText) {
-      void navigator.clipboard.writeText(selectedText).catch(() => {
-        // Ignore clipboard permission failures.
-      })
+    const onCopySuccess = (): void => {
+      restoreSelection(normalizedStart, normalizedEnd)
+      showActionToast('Copied')
     }
+
+    if (executeTextareaCommand('copy')) {
+      onCopySuccess()
+      return
+    }
+
+    if (navigator.clipboard?.writeText) {
+      void navigator.clipboard
+        .writeText(selectedText)
+        .then(() => {
+          onCopySuccess()
+        })
+        .catch(() => {
+          restoreSelection(normalizedStart, normalizedEnd)
+        })
+      return
+    }
+
+    restoreSelection(normalizedStart, normalizedEnd)
   }
 
   const handleDeleteSelection = (): void => {
     if (!hasNote) return
-    if (executeTextareaCommand('delete')) return
 
     const textarea = focusTextarea()
     if (!textarea) return
     const currentContent = noteContent ?? ''
     const { normalizedStart, normalizedEnd } = getSelectionRange(textarea, currentContent)
+    const hasSelection = normalizedStart !== normalizedEnd
+    const hasForwardCharacter = normalizedStart < currentContent.length
+    if (!hasSelection && !hasForwardCharacter) return
 
     let nextContent = currentContent
     let nextCursorPosition = normalizedStart
+
+    if (typeof document.execCommand === 'function' && document.execCommand('delete')) {
+      if (hasSelection) showActionToast('Deleted')
+      return
+    }
 
     if (normalizedStart !== normalizedEnd) {
       nextContent = currentContent.slice(0, normalizedStart) + currentContent.slice(normalizedEnd)
@@ -193,6 +248,7 @@ export function EditorPane({
       target.focus()
       target.setSelectionRange(nextCursorPosition, nextCursorPosition)
     })
+    if (hasSelection) showActionToast('Deleted')
   }
 
   const handleCut = (): void => {
@@ -349,6 +405,12 @@ export function EditorPane({
         onClose={() => setIsFindReplaceOpen(false)}
         onReplace={handleFindReplace}
       />
+
+      {actionToastMessage && (
+        <div className="pointer-events-none fixed bottom-7 left-1/2 z-[70] -translate-x-1/2 rounded bg-[#343536] px-12 py-3 text-[15px] text-[#f5f6f8] shadow-[0_8px_24px_rgba(0,0,0,0.28)]">
+          {actionToastMessage}
+        </div>
+      )}
     </>
   )
 }
