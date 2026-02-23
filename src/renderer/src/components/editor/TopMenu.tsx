@@ -8,12 +8,15 @@ import {
   FiCornerUpRight,
   FiFile,
   FiFolder,
+  FiInfo,
+  FiKey,
   FiMaximize2,
   FiMinimize2,
   FiPrinter,
   FiScissors,
   FiSearch,
   FiSave,
+  FiShield,
   FiSmile,
   FiType,
   FiUploadCloud,
@@ -28,6 +31,9 @@ interface TopMenuProps {
   onFileSave: () => void
   onFileSaveAs: () => void
   onFilePrint: () => void
+  onHelpShortcuts: () => void
+  onHelpPrivacy: () => void
+  onHelpAbout: () => void
   isExpandedView: boolean
   onToggleExpandedView: () => void
   isStatusBarVisible: boolean
@@ -56,6 +62,9 @@ export function TopMenu({
   onFileSave,
   onFileSaveAs,
   onFilePrint,
+  onHelpShortcuts,
+  onHelpPrivacy,
+  onHelpAbout,
   isExpandedView,
   onToggleExpandedView,
   isStatusBarVisible,
@@ -82,15 +91,27 @@ export function TopMenu({
   const [isToolsMenuOpen, setIsToolsMenuOpen] = useState(false)
   const [isFormatMenuOpen, setIsFormatMenuOpen] = useState(false)
   const [isInsertMenuOpen, setIsInsertMenuOpen] = useState(false)
+  const [isHelpMenuOpen, setIsHelpMenuOpen] = useState(false)
   const fileMenuRef = useRef<HTMLDivElement | null>(null)
   const editMenuRef = useRef<HTMLDivElement | null>(null)
   const viewMenuRef = useRef<HTMLDivElement | null>(null)
   const toolsMenuRef = useRef<HTMLDivElement | null>(null)
   const formatMenuRef = useRef<HTMLDivElement | null>(null)
   const insertMenuRef = useRef<HTMLDivElement | null>(null)
+  const helpMenuRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
-    if (!isFileMenuOpen && !isEditMenuOpen && !isViewMenuOpen && !isToolsMenuOpen && !isFormatMenuOpen && !isInsertMenuOpen) return
+    if (
+      !isFileMenuOpen &&
+      !isEditMenuOpen &&
+      !isViewMenuOpen &&
+      !isToolsMenuOpen &&
+      !isFormatMenuOpen &&
+      !isInsertMenuOpen &&
+      !isHelpMenuOpen
+    ) {
+      return
+    }
 
     const handlePointerDownOutside = (event: PointerEvent): void => {
       const clickTarget = event.target as Node
@@ -100,12 +121,14 @@ export function TopMenu({
       if (toolsMenuRef.current?.contains(clickTarget)) return
       if (formatMenuRef.current?.contains(clickTarget)) return
       if (insertMenuRef.current?.contains(clickTarget)) return
+      if (helpMenuRef.current?.contains(clickTarget)) return
       setIsFileMenuOpen(false)
       setIsEditMenuOpen(false)
       setIsViewMenuOpen(false)
       setIsToolsMenuOpen(false)
       setIsFormatMenuOpen(false)
       setIsInsertMenuOpen(false)
+      setIsHelpMenuOpen(false)
     }
 
     const handleEscapeKey = (event: KeyboardEvent): void => {
@@ -116,6 +139,7 @@ export function TopMenu({
       setIsToolsMenuOpen(false)
       setIsFormatMenuOpen(false)
       setIsInsertMenuOpen(false)
+      setIsHelpMenuOpen(false)
     }
 
     const handleWindowBlur = (): void => {
@@ -125,6 +149,7 @@ export function TopMenu({
       setIsToolsMenuOpen(false)
       setIsFormatMenuOpen(false)
       setIsInsertMenuOpen(false)
+      setIsHelpMenuOpen(false)
     }
 
     window.addEventListener('pointerdown', handlePointerDownOutside, true)
@@ -135,7 +160,7 @@ export function TopMenu({
       window.removeEventListener('keydown', handleEscapeKey)
       window.removeEventListener('blur', handleWindowBlur)
     }
-  }, [isEditMenuOpen, isFileMenuOpen, isFormatMenuOpen, isInsertMenuOpen, isToolsMenuOpen, isViewMenuOpen])
+  }, [isEditMenuOpen, isFileMenuOpen, isFormatMenuOpen, isHelpMenuOpen, isInsertMenuOpen, isToolsMenuOpen, isViewMenuOpen])
 
   return (
     <header className="flex items-center justify-between border-b border-[#d9dee5] bg-[#f6f6f7] pr-2 pl-2.5 md:pr-2.5 md:pl-4">
@@ -157,6 +182,7 @@ export function TopMenu({
                     setIsToolsMenuOpen(false)
                     setIsFormatMenuOpen(false)
                     setIsInsertMenuOpen(false)
+                    setIsHelpMenuOpen(false)
                   }}
                 >
                   {item}
@@ -213,6 +239,7 @@ export function TopMenu({
                     setIsToolsMenuOpen(false)
                     setIsFormatMenuOpen(false)
                     setIsInsertMenuOpen(false)
+                    setIsHelpMenuOpen(false)
                   }}
                 >
                   {item}
@@ -303,6 +330,7 @@ export function TopMenu({
                     setIsToolsMenuOpen(false)
                     setIsFormatMenuOpen(false)
                     setIsInsertMenuOpen(false)
+                    setIsHelpMenuOpen(false)
                   }}
                 >
                   {item}
@@ -420,6 +448,7 @@ export function TopMenu({
                     setIsViewMenuOpen(false)
                     setIsFormatMenuOpen(false)
                     setIsInsertMenuOpen(false)
+                    setIsHelpMenuOpen(false)
                   }}
                 >
                   {item}
@@ -460,6 +489,7 @@ export function TopMenu({
                     setIsViewMenuOpen(false)
                     setIsToolsMenuOpen(false)
                     setIsFormatMenuOpen(false)
+                    setIsHelpMenuOpen(false)
                   }}
                 >
                   {item}
@@ -521,6 +551,7 @@ export function TopMenu({
                     setIsViewMenuOpen(false)
                     setIsToolsMenuOpen(false)
                     setIsInsertMenuOpen(false)
+                    setIsHelpMenuOpen(false)
                   }}
                 >
                   {item}
@@ -555,6 +586,70 @@ export function TopMenu({
                         <FiType />
                       </span>
                       <span>Font</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : item === 'Help' ? (
+              <div ref={helpMenuRef}>
+                <button
+                  className={[
+                    'cursor-pointer whitespace-nowrap bg-transparent p-0 text-sm text-[#2f3440] md:text-[15px]',
+                    isHelpMenuOpen ? 'text-[#1f232d]' : ''
+                  ].join(' ')}
+                  type="button"
+                  onClick={() => {
+                    setIsHelpMenuOpen((prev) => !prev)
+                    setIsFileMenuOpen(false)
+                    setIsEditMenuOpen(false)
+                    setIsViewMenuOpen(false)
+                    setIsToolsMenuOpen(false)
+                    setIsFormatMenuOpen(false)
+                    setIsInsertMenuOpen(false)
+                  }}
+                >
+                  {item}
+                </button>
+                {isHelpMenuOpen && (
+                  <div className="absolute top-7 left-0 z-40 min-w-[186px] border border-[#d2d7de] bg-[#f4f4f5] shadow-[0_10px_24px_rgba(25,32,45,0.12)]">
+                    <button
+                      type="button"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      onClick={() => {
+                        onHelpShortcuts()
+                        setIsHelpMenuOpen(false)
+                      }}
+                    >
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">
+                        <FiKey />
+                      </span>
+                      <span>Shortcuts</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      onClick={() => {
+                        onHelpPrivacy()
+                        setIsHelpMenuOpen(false)
+                      }}
+                    >
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">
+                        <FiShield />
+                      </span>
+                      <span>Privacy Policy</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      onClick={() => {
+                        onHelpAbout()
+                        setIsHelpMenuOpen(false)
+                      }}
+                    >
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">
+                        <FiInfo />
+                      </span>
+                      <span>About</span>
                     </button>
                   </div>
                 )}

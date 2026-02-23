@@ -14,6 +14,9 @@ interface EditorPaneProps {
   onFileSave: () => void
   onFileSaveAs: () => void
   onFilePrint: () => void
+  onHelpShortcuts: () => void
+  onHelpPrivacy: () => void
+  onHelpAbout: () => void
   noteTitle: string | null
   noteContent: string | null
   characterCount: number
@@ -43,6 +46,9 @@ export function EditorPane({
   onFileSave,
   onFileSaveAs,
   onFilePrint,
+  onHelpShortcuts,
+  onHelpPrivacy,
+  onHelpAbout,
   noteTitle,
   noteContent,
   characterCount,
@@ -388,6 +394,9 @@ export function EditorPane({
           onFileSave={onFileSave}
           onFileSaveAs={onFileSaveAs}
           onFilePrint={onFilePrint}
+          onHelpShortcuts={onHelpShortcuts}
+          onHelpPrivacy={onHelpPrivacy}
+          onHelpAbout={onHelpAbout}
           isExpandedView={isExpandedView}
           onToggleExpandedView={onToggleExpandedView}
           isStatusBarVisible={isStatusBarVisible}
