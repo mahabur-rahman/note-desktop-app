@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import type { EditorFontSettings } from '../../types/ui'
 import { FontSettingsModal } from './FontSettingsModal'
 import { NoteTitleRow } from './NoteTitleRow'
@@ -52,6 +53,41 @@ export function EditorPane({
 }: EditorPaneProps): React.JSX.Element {
   const hasNote = noteTitle !== null
   const resolvedFontFamily = editorFontSettings.fontFamily === 'default' ? undefined : editorFontSettings.fontFamily
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+
+  const handleInsertDateTime = (): void => {
+    if (!hasNote) return
+
+    const textarea = textareaRef.current
+    const currentContent = noteContent ?? ''
+
+    const now = new Date()
+    const month = now.getMonth() + 1
+    const day = now.getDate()
+    const year = now.getFullYear()
+    const hours24 = now.getHours()
+    const hours12 = hours24 % 12 || 12
+    const minutes = String(now.getMinutes()).padStart(2, '0')
+    const meridiem = hours24 >= 12 ? 'pm' : 'am'
+    const dateTimeText = `${month}/${day}/${year} ${hours12}:${minutes} ${meridiem}`
+
+    if (!textarea) {
+      onChangeNoteContent(`${currentContent}${dateTimeText}`)
+      return
+    }
+
+    const selectionStart = textarea.selectionStart ?? currentContent.length
+    const selectionEnd = textarea.selectionEnd ?? currentContent.length
+    const nextContent =
+      currentContent.slice(0, selectionStart) + dateTimeText + currentContent.slice(Math.max(selectionEnd, selectionStart))
+    const nextCursorPosition = selectionStart + dateTimeText.length
+
+    onChangeNoteContent(nextContent)
+    window.requestAnimationFrame(() => {
+      textarea.focus()
+      textarea.setSelectionRange(nextCursorPosition, nextCursorPosition)
+    })
+  }
 
   return (
     <>
@@ -71,6 +107,7 @@ export function EditorPane({
           onToggleStatusBar={onToggleStatusBar}
           isWordWrapEnabled={isWordWrapEnabled}
           onToggleWordWrap={onToggleWordWrap}
+          onInsertDateTime={handleInsertDateTime}
           onOpenFontSettings={onOpenFontSettings}
           isSpellCheckEnabled={isSpellCheckEnabled}
           onToggleSpellCheck={onToggleSpellCheck}
@@ -92,6 +129,7 @@ export function EditorPane({
             }}
             placeholder="Write your note..."
             value={noteContent ?? ''}
+            ref={textareaRef}
             disabled={!hasNote}
             wrap={isWordWrapEnabled ? 'soft' : 'off'}
             spellCheck={isSpellCheckEnabled}

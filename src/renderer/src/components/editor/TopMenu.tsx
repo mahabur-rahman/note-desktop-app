@@ -10,6 +10,7 @@ interface TopMenuProps {
   onToggleStatusBar: () => void
   isWordWrapEnabled: boolean
   onToggleWordWrap: () => void
+  onInsertDateTime: () => void
   onOpenFontSettings: () => void
   isSpellCheckEnabled: boolean
   onToggleSpellCheck: () => void
@@ -23,6 +24,7 @@ export function TopMenu({
   onToggleStatusBar,
   isWordWrapEnabled,
   onToggleWordWrap,
+  onInsertDateTime,
   onOpenFontSettings,
   isSpellCheckEnabled,
   onToggleSpellCheck
@@ -195,6 +197,10 @@ export function TopMenu({
                     <button
                       type="button"
                       className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      onClick={() => {
+                        onInsertDateTime()
+                        setIsInsertMenuOpen(false)
+                      }}
                     >
                       <span className="inline-flex w-5 items-center justify-center text-[16px]">
                         <FiClock />
