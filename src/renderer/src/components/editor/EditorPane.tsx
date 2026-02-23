@@ -298,25 +298,66 @@ export function EditorPane({
 
   const handleFindReplace = ({ findText, replaceText, matchCase, wholeWords }: FindReplacePayload): void => {
     if (!hasNote) return
-
-    const normalizedFindText = findText.trim()
-    if (!normalizedFindText) return
+    if (findText.length === 0) return
 
     const currentContent = noteContent ?? ''
-    const escapedFindText = escapeRegExp(normalizedFindText)
+    if (currentContent.length === 0) return
+
+    const escapedFindText = escapeRegExp(findText)
     const pattern = wholeWords ? `\\b${escapedFindText}\\b` : escapedFindText
-    const flags = matchCase ? 'g' : 'gi'
-    const replaceRegex = new RegExp(pattern, flags)
-    const matches = currentContent.match(replaceRegex)
+    const flags = matchCase ? '' : 'i'
 
-    if (!matches || matches.length === 0) return
+    const textarea = focusTextarea()
+    if (!textarea) return
+    const { normalizedStart, normalizedEnd } = getSelectionRange(textarea, currentContent)
 
-    const nextContent = currentContent.replace(replaceRegex, replaceText)
+    const exactMatchRegex = new RegExp(`^(?:${pattern})$`, flags)
+    const selectedText = currentContent.slice(normalizedStart, normalizedEnd)
+    const hasSelectedMatch = normalizedStart !== normalizedEnd && exactMatchRegex.test(selectedText)
+
+    if (hasSelectedMatch) {
+      const nextContent = currentContent.slice(0, normalizedStart) + replaceText + currentContent.slice(normalizedEnd)
+      const replaceEnd = normalizedStart + replaceText.length
+
+      onChangeNoteContent(nextContent)
+      window.requestAnimationFrame(() => {
+        const target = textareaRef.current
+        if (!target) return
+        target.focus()
+        target.setSelectionRange(normalizedStart, replaceEnd)
+      })
+      return
+    }
+
+    const searchRegex = new RegExp(pattern, flags)
+    const startFrom = normalizedEnd
+    const tailText = currentContent.slice(startFrom)
+    const tailMatch = searchRegex.exec(tailText)
+
+    let matchIndex = -1
+    let matchText = ''
+
+    if (tailMatch) {
+      matchIndex = startFrom + tailMatch.index
+      matchText = tailMatch[0]
+    } else {
+      const headText = currentContent.slice(0, normalizedStart)
+      const headMatch = searchRegex.exec(headText)
+      if (!headMatch) return
+      matchIndex = headMatch.index
+      matchText = headMatch[0]
+    }
+
+    const matchEnd = matchIndex + matchText.length
+    const nextContent = currentContent.slice(0, matchIndex) + replaceText + currentContent.slice(matchEnd)
+    const replaceEnd = matchIndex + replaceText.length
+
     onChangeNoteContent(nextContent)
     window.requestAnimationFrame(() => {
       const target = textareaRef.current
       if (!target) return
       target.focus()
+      target.setSelectionRange(matchIndex, replaceEnd)
     })
   }
 
