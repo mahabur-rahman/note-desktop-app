@@ -1,7 +1,8 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import type { EditorFontSettings } from '../../types/ui'
 import { FontSettingsModal } from './FontSettingsModal'
 import { NoteTitleRow } from './NoteTitleRow'
+import { SpecialCharactersModal } from './SpecialCharactersModal'
 import { TopMenu } from './TopMenu'
 
 interface EditorPaneProps {
@@ -54,13 +55,33 @@ export function EditorPane({
   const hasNote = noteTitle !== null
   const resolvedFontFamily = editorFontSettings.fontFamily === 'default' ? undefined : editorFontSettings.fontFamily
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const [isSpecialCharactersOpen, setIsSpecialCharactersOpen] = useState(false)
 
-  const handleInsertDateTime = (): void => {
+  const insertTextAtCursor = (insertValue: string): void => {
     if (!hasNote) return
 
     const textarea = textareaRef.current
     const currentContent = noteContent ?? ''
 
+    if (!textarea) {
+      onChangeNoteContent(`${currentContent}${insertValue}`)
+      return
+    }
+
+    const selectionStart = textarea.selectionStart ?? currentContent.length
+    const selectionEnd = textarea.selectionEnd ?? currentContent.length
+    const nextContent =
+      currentContent.slice(0, selectionStart) + insertValue + currentContent.slice(Math.max(selectionEnd, selectionStart))
+    const nextCursorPosition = selectionStart + insertValue.length
+
+    onChangeNoteContent(nextContent)
+    window.requestAnimationFrame(() => {
+      textarea.focus()
+      textarea.setSelectionRange(nextCursorPosition, nextCursorPosition)
+    })
+  }
+
+  const handleInsertDateTime = (): void => {
     const now = new Date()
     const month = now.getMonth() + 1
     const day = now.getDate()
@@ -70,23 +91,12 @@ export function EditorPane({
     const minutes = String(now.getMinutes()).padStart(2, '0')
     const meridiem = hours24 >= 12 ? 'pm' : 'am'
     const dateTimeText = `${month}/${day}/${year} ${hours12}:${minutes} ${meridiem}`
+    insertTextAtCursor(dateTimeText)
+  }
 
-    if (!textarea) {
-      onChangeNoteContent(`${currentContent}${dateTimeText}`)
-      return
-    }
-
-    const selectionStart = textarea.selectionStart ?? currentContent.length
-    const selectionEnd = textarea.selectionEnd ?? currentContent.length
-    const nextContent =
-      currentContent.slice(0, selectionStart) + dateTimeText + currentContent.slice(Math.max(selectionEnd, selectionStart))
-    const nextCursorPosition = selectionStart + dateTimeText.length
-
-    onChangeNoteContent(nextContent)
-    window.requestAnimationFrame(() => {
-      textarea.focus()
-      textarea.setSelectionRange(nextCursorPosition, nextCursorPosition)
-    })
+  const handleOpenSpecialCharacters = (): void => {
+    if (!hasNote) return
+    setIsSpecialCharactersOpen(true)
   }
 
   return (
@@ -108,6 +118,7 @@ export function EditorPane({
           isWordWrapEnabled={isWordWrapEnabled}
           onToggleWordWrap={onToggleWordWrap}
           onInsertDateTime={handleInsertDateTime}
+          onOpenSpecialCharacters={handleOpenSpecialCharacters}
           onOpenFontSettings={onOpenFontSettings}
           isSpellCheckEnabled={isSpellCheckEnabled}
           onToggleSpellCheck={onToggleSpellCheck}
@@ -149,6 +160,12 @@ export function EditorPane({
         onChange={onChangeEditorFontSettings}
         onReset={onResetEditorFontSettings}
         onClose={onCloseFontSettings}
+      />
+
+      <SpecialCharactersModal
+        isOpen={isSpecialCharactersOpen}
+        onClose={() => setIsSpecialCharactersOpen(false)}
+        onInsert={(character) => insertTextAtCursor(character)}
       />
     </>
   )

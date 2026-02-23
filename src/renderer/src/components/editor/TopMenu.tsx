@@ -11,6 +11,7 @@ interface TopMenuProps {
   isWordWrapEnabled: boolean
   onToggleWordWrap: () => void
   onInsertDateTime: () => void
+  onOpenSpecialCharacters: () => void
   onOpenFontSettings: () => void
   isSpellCheckEnabled: boolean
   onToggleSpellCheck: () => void
@@ -25,6 +26,7 @@ export function TopMenu({
   isWordWrapEnabled,
   onToggleWordWrap,
   onInsertDateTime,
+  onOpenSpecialCharacters,
   onOpenFontSettings,
   isSpellCheckEnabled,
   onToggleSpellCheck
@@ -210,6 +212,10 @@ export function TopMenu({
                     <button
                       type="button"
                       className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      onClick={() => {
+                        onOpenSpecialCharacters()
+                        setIsInsertMenuOpen(false)
+                      }}
                     >
                       <span className="inline-flex w-5 items-center justify-center text-[16px]">Ω</span>
                       <span>Characters</span>
