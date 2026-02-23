@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { EditorFontSettings, NoteSummary, SidebarSortMode, SidebarViewMode } from '../../types/ui'
 import { ConfirmModal } from '../common/ConfirmModal'
+import { SaveAsModal } from '../common/SaveAsModal'
 import { EditorPane } from '../editor/EditorPane'
 import { AppTopBar } from './AppTopBar'
 import { NotesSidebar } from '../sidebar/NotesSidebar'
@@ -285,6 +286,8 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
   const [isFontSettingsOpen, setIsFontSettingsOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [isClearModalOpen, setIsClearModalOpen] = useState(false)
+  const [isSaveAsModalOpen, setIsSaveAsModalOpen] = useState(false)
+  const [saveAsFileName, setSaveAsFileName] = useState('')
   const [timeNow, setTimeNow] = useState(() => Date.now())
   const updateTimeoutIdRef = useRef<number | null>(null)
   const normalizedSearchQuery = searchQuery.trim().toLocaleLowerCase()
@@ -692,14 +695,23 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
     if (!activeNote) return
 
     const defaultFileName = ensureTxtExtension(sanitizeDownloadFileName(activeNote.title || 'Untitled Note'))
-    const enteredName = window.prompt('Save As', defaultFileName)
-    if (enteredName === null) return
+    setSaveAsFileName(defaultFileName)
+    setIsSaveAsModalOpen(true)
+  }
 
-    const normalizedName = sanitizeDownloadFileName(enteredName)
+  const handleCancelSaveAs = (): void => {
+    setIsSaveAsModalOpen(false)
+  }
+
+  const handleConfirmSaveAs = (): void => {
+    if (!activeNote) return
+
+    const normalizedName = sanitizeDownloadFileName(saveAsFileName)
     if (!normalizedName) return
 
     const targetFileName = ensureTxtExtension(normalizedName)
     downloadNoteAsText(targetFileName, activeNote.content)
+    setIsSaveAsModalOpen(false)
   }
 
   const handleFilePrint = (): void => {
@@ -870,6 +882,14 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
         isOpen={isClearModalOpen}
         onConfirm={handleConfirmClearNotes}
         onCancel={() => setIsClearModalOpen(false)}
+      />
+
+      <SaveAsModal
+        isOpen={isSaveAsModalOpen}
+        fileName={saveAsFileName}
+        onFileNameChange={setSaveAsFileName}
+        onSave={handleConfirmSaveAs}
+        onCancel={handleCancelSaveAs}
       />
     </main>
   )
