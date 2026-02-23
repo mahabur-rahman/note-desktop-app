@@ -68,6 +68,13 @@ export function EditorPane({
     return textarea
   }
 
+  const executeTextareaCommand = (command: 'undo' | 'redo' | 'cut' | 'copy' | 'delete'): boolean => {
+    const textarea = focusTextarea()
+    if (!textarea) return false
+    if (typeof document.execCommand !== 'function') return false
+    return document.execCommand(command)
+  }
+
   const getSelectionRange = (
     textarea: HTMLTextAreaElement,
     content: string
@@ -131,22 +138,17 @@ export function EditorPane({
 
   const handleUndo = (): void => {
     if (!hasNote) return
-    if (!focusTextarea()) return
-    if (typeof document.execCommand === 'function') {
-      document.execCommand('undo')
-    }
+    executeTextareaCommand('undo')
   }
 
   const handleRedo = (): void => {
     if (!hasNote) return
-    if (!focusTextarea()) return
-    if (typeof document.execCommand === 'function') {
-      document.execCommand('redo')
-    }
+    executeTextareaCommand('redo')
   }
 
   const handleCopy = (): void => {
     if (!hasNote) return
+    if (executeTextareaCommand('copy')) return
 
     const textarea = focusTextarea()
     if (!textarea) return
@@ -166,6 +168,7 @@ export function EditorPane({
 
   const handleDeleteSelection = (): void => {
     if (!hasNote) return
+    if (executeTextareaCommand('delete')) return
 
     const textarea = focusTextarea()
     if (!textarea) return
@@ -194,6 +197,7 @@ export function EditorPane({
 
   const handleCut = (): void => {
     if (!hasNote) return
+    if (executeTextareaCommand('cut')) return
 
     const textarea = focusTextarea()
     if (!textarea) return
@@ -223,8 +227,7 @@ export function EditorPane({
 
     const textarea = focusTextarea()
     if (!textarea) return
-    const currentContent = noteContent ?? ''
-    textarea.setSelectionRange(0, currentContent.length)
+    textarea.select()
   }
 
   const handleOpenFindReplace = (): void => {
