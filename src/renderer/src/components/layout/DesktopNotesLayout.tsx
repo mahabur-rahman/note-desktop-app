@@ -48,6 +48,40 @@ function buildExcerpt(content: string): string {
   return normalizedContent.slice(0, 72)
 }
 
+function sanitizeDownloadFileName(fileName: string): string {
+  const normalized = fileName
+    .replace(/[<>:"/\\|?*\x00-\x1f]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/[. ]+$/g, '')
+  return normalized || 'Untitled Note'
+}
+
+function deriveNoteTitleFromFileName(fileName: string): string {
+  const sanitizedName = fileName.trim()
+  if (!sanitizedName) return 'Untitled Note'
+  const strippedExtension = sanitizedName.replace(/\.[^/.]+$/, '')
+  const normalizedTitle = strippedExtension.trim()
+  return normalizedTitle || 'Untitled Note'
+}
+
+function ensureTxtExtension(fileName: string): string {
+  return fileName.toLowerCase().endsWith('.txt') ? fileName : `${fileName}.txt`
+}
+
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (character) => {
+    const replacements: Record<string, string> = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }
+    return replacements[character] ?? character
+  })
+}
+
 function loadBrowserNotes(): NoteSummary[] {
   try {
     const rawValue = window.localStorage.getItem(browserNotesStorageKey)
@@ -551,6 +585,156 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
     void createNote()
   }
 
+  const upsertActiveNoteFromExternalContent = async (title: string, content: string): Promise<void> => {
+    const normalizedTitle = title.trim() || 'Untitled Note'
+    const normalizedContent = typeof content === 'string' ? content : ''
+    const now = Date.now()
+
+    clearPendingUpdate()
+
+    if (activeNote) {
+      const nextNote: NoteSummary = {
+        ...activeNote,
+        title: normalizedTitle,
+        content: normalizedContent,
+        excerpt: buildExcerpt(normalizedContent),
+        relativeTime: 'just now',
+        updatedAt: now
+      }
+
+      setNotes((prev) => prev.map((note) => (note.id === activeNote.id ? nextNote : note)))
+      queuePersistNote(nextNote)
+      return
+    }
+
+    const notesApi = getNotesApi()
+    const createdNote =
+      notesApi && typeof notesApi.create === 'function'
+        ? normalizeNotes([await notesApi.create()])[0]
+        : {
+          id: generateNoteId(),
+          title: 'Untitled Note',
+          excerpt: 'Blank',
+          content: '',
+          relativeTime: 'just now',
+          createdAt: now,
+          updatedAt: now
+        }
+
+    const nextNote: NoteSummary = {
+      ...createdNote,
+      title: normalizedTitle,
+      content: normalizedContent,
+      excerpt: buildExcerpt(normalizedContent),
+      relativeTime: 'just now',
+      updatedAt: now
+    }
+
+    setNotes((prev) => {
+      const nextNotes = [nextNote, ...prev]
+      if (!notesApi) saveBrowserNotes(nextNotes)
+      return nextNotes
+    })
+    setActiveNoteId(nextNote.id)
+    queuePersistNote(nextNote)
+  }
+
+  const downloadNoteAsText = (fileName: string, content: string): void => {
+    const fileContent = typeof content === 'string' ? content : ''
+    const textBlob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' })
+    const downloadUrl = URL.createObjectURL(textBlob)
+    const anchorElement = document.createElement('a')
+    anchorElement.href = downloadUrl
+    anchorElement.download = fileName
+    document.body.appendChild(anchorElement)
+    anchorElement.click()
+    anchorElement.remove()
+    URL.revokeObjectURL(downloadUrl)
+  }
+
+  const handleFileNew = (): void => {
+    handleCreateNote()
+  }
+
+  const handleFileOpen = (): void => {
+    const fileInput = document.createElement('input')
+    fileInput.type = 'file'
+    fileInput.accept = '.txt,.md,.markdown,text/plain'
+
+    fileInput.onchange = () => {
+      const selectedFile = fileInput.files?.[0]
+      if (!selectedFile) return
+
+      const openFile = async (): Promise<void> => {
+        try {
+          const fileContent = await selectedFile.text()
+          const fileTitle = deriveNoteTitleFromFileName(selectedFile.name)
+          await upsertActiveNoteFromExternalContent(fileTitle, fileContent)
+        } catch (error) {
+          console.error('Failed to open file', error)
+        }
+      }
+
+      void openFile()
+    }
+
+    fileInput.click()
+  }
+
+  const handleFileSave = (): void => {
+    if (!activeNote) return
+
+    const baseFileName = ensureTxtExtension(sanitizeDownloadFileName(activeNote.title || 'Untitled Note'))
+    downloadNoteAsText(baseFileName, activeNote.content)
+  }
+
+  const handleFileSaveAs = (): void => {
+    if (!activeNote) return
+
+    const defaultFileName = ensureTxtExtension(sanitizeDownloadFileName(activeNote.title || 'Untitled Note'))
+    const enteredName = window.prompt('Save As', defaultFileName)
+    if (enteredName === null) return
+
+    const normalizedName = sanitizeDownloadFileName(enteredName)
+    if (!normalizedName) return
+
+    const targetFileName = ensureTxtExtension(normalizedName)
+    downloadNoteAsText(targetFileName, activeNote.content)
+  }
+
+  const handleFilePrint = (): void => {
+    if (!activeNote) return
+
+    const printTitle = escapeHtml(activeNote.title || 'Untitled Note')
+    const printContent = escapeHtml(activeNote.content || '')
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=900,height=700')
+    if (!printWindow) return
+
+    printWindow.document.open()
+    printWindow.document.write(`<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>${printTitle}</title>
+    <style>
+      body { margin: 24px; font-family: Arial, sans-serif; color: #1f232d; }
+      h1 { margin: 0 0 14px; font-size: 22px; }
+      pre { margin: 0; white-space: pre-wrap; word-break: break-word; font-size: 14px; line-height: 1.45; }
+    </style>
+  </head>
+  <body>
+    <h1>${printTitle}</h1>
+    <pre>${printContent}</pre>
+  </body>
+</html>`)
+    printWindow.document.close()
+    window.setTimeout(() => {
+      printWindow.focus()
+      printWindow.print()
+      printWindow.close()
+    }, 60)
+  }
+
   const handleBackupNotes = (): void => {
     const backupNotes = async (): Promise<void> => {
       try {
@@ -643,6 +827,11 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
         <div className="min-h-0 min-w-0 flex-1">
           <EditorPane
             menuItems={menuItems}
+            onFileNew={handleFileNew}
+            onFileOpen={handleFileOpen}
+            onFileSave={handleFileSave}
+            onFileSaveAs={handleFileSaveAs}
+            onFilePrint={handleFilePrint}
             noteTitle={activeNote?.title ?? null}
             noteContent={activeNote?.content ?? null}
             characterCount={activeNoteCharacterCount}

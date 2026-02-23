@@ -9,6 +9,11 @@ import { TopMenu } from './TopMenu'
 
 interface EditorPaneProps {
   menuItems: readonly string[]
+  onFileNew: () => void
+  onFileOpen: () => void
+  onFileSave: () => void
+  onFileSaveAs: () => void
+  onFilePrint: () => void
   noteTitle: string | null
   noteContent: string | null
   characterCount: number
@@ -33,6 +38,11 @@ interface EditorPaneProps {
 
 export function EditorPane({
   menuItems,
+  onFileNew,
+  onFileOpen,
+  onFileSave,
+  onFileSaveAs,
+  onFilePrint,
   noteTitle,
   noteContent,
   characterCount,
@@ -373,6 +383,11 @@ export function EditorPane({
       >
         <TopMenu
           items={menuItems}
+          onFileNew={onFileNew}
+          onFileOpen={onFileOpen}
+          onFileSave={onFileSave}
+          onFileSaveAs={onFileSaveAs}
+          onFilePrint={onFilePrint}
           isExpandedView={isExpandedView}
           onToggleExpandedView={onToggleExpandedView}
           isStatusBarVisible={isStatusBarVisible}
