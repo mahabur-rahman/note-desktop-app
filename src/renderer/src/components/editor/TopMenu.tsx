@@ -12,6 +12,7 @@ interface TopMenuProps {
   onToggleWordWrap: () => void
   onInsertDateTime: () => void
   onOpenSpecialCharacters: () => void
+  onOpenEmojis: () => void
   onOpenFontSettings: () => void
   isSpellCheckEnabled: boolean
   onToggleSpellCheck: () => void
@@ -27,6 +28,7 @@ export function TopMenu({
   onToggleWordWrap,
   onInsertDateTime,
   onOpenSpecialCharacters,
+  onOpenEmojis,
   onOpenFontSettings,
   isSpellCheckEnabled,
   onToggleSpellCheck
@@ -223,6 +225,10 @@ export function TopMenu({
                     <button
                       type="button"
                       className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      onClick={() => {
+                        onOpenEmojis()
+                        setIsInsertMenuOpen(false)
+                      }}
                     >
                       <span className="inline-flex w-5 items-center justify-center text-[16px]">
                         <FiSmile />

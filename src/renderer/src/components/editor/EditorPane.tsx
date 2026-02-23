@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import type { EditorFontSettings } from '../../types/ui'
+import { EmojisModal } from './EmojisModal'
 import { FontSettingsModal } from './FontSettingsModal'
 import { NoteTitleRow } from './NoteTitleRow'
 import { SpecialCharactersModal } from './SpecialCharactersModal'
@@ -56,6 +57,7 @@ export function EditorPane({
   const resolvedFontFamily = editorFontSettings.fontFamily === 'default' ? undefined : editorFontSettings.fontFamily
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const [isSpecialCharactersOpen, setIsSpecialCharactersOpen] = useState(false)
+  const [isEmojisOpen, setIsEmojisOpen] = useState(false)
 
   const insertTextAtCursor = (insertValue: string): void => {
     if (!hasNote) return
@@ -99,6 +101,11 @@ export function EditorPane({
     setIsSpecialCharactersOpen(true)
   }
 
+  const handleOpenEmojis = (): void => {
+    if (!hasNote) return
+    setIsEmojisOpen(true)
+  }
+
   return (
     <>
       <section
@@ -119,6 +126,7 @@ export function EditorPane({
           onToggleWordWrap={onToggleWordWrap}
           onInsertDateTime={handleInsertDateTime}
           onOpenSpecialCharacters={handleOpenSpecialCharacters}
+          onOpenEmojis={handleOpenEmojis}
           onOpenFontSettings={onOpenFontSettings}
           isSpellCheckEnabled={isSpellCheckEnabled}
           onToggleSpellCheck={onToggleSpellCheck}
@@ -166,6 +174,12 @@ export function EditorPane({
         isOpen={isSpecialCharactersOpen}
         onClose={() => setIsSpecialCharactersOpen(false)}
         onInsert={(character) => insertTextAtCursor(character)}
+      />
+
+      <EmojisModal
+        isOpen={isEmojisOpen}
+        onClose={() => setIsEmojisOpen(false)}
+        onInsert={(emoji) => insertTextAtCursor(emoji)}
       />
     </>
   )
