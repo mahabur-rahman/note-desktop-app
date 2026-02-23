@@ -275,7 +275,18 @@ export function EditorPane({
 
     const textarea = focusTextarea()
     if (!textarea) return
+    const currentContent = noteContent ?? ''
+    const endPosition = currentContent.length
+
     textarea.select()
+    textarea.setSelectionRange(0, endPosition)
+
+    window.requestAnimationFrame(() => {
+      const target = textareaRef.current
+      if (!target) return
+      target.focus()
+      target.setSelectionRange(0, endPosition)
+    })
   }
 
   const handleOpenFindReplace = (): void => {
