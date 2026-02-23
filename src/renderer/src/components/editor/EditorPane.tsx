@@ -222,24 +222,16 @@ export function EditorPane({
     const currentContent = noteContent ?? ''
     const { normalizedStart, normalizedEnd } = getSelectionRange(textarea, currentContent)
     const hasSelection = normalizedStart !== normalizedEnd
-    const hasForwardCharacter = normalizedStart < currentContent.length
-    if (!hasSelection && !hasForwardCharacter) return
+    if (!hasSelection) return
 
-    let nextContent = currentContent
-    let nextCursorPosition = normalizedStart
+    const nextCursorPosition = normalizedStart
 
     if (typeof document.execCommand === 'function' && document.execCommand('delete')) {
-      if (hasSelection) showActionToast('Deleted')
+      showActionToast('Deleted')
       return
     }
 
-    if (normalizedStart !== normalizedEnd) {
-      nextContent = currentContent.slice(0, normalizedStart) + currentContent.slice(normalizedEnd)
-    } else if (normalizedStart < currentContent.length) {
-      nextContent = currentContent.slice(0, normalizedStart) + currentContent.slice(normalizedStart + 1)
-    } else {
-      return
-    }
+    const nextContent = currentContent.slice(0, normalizedStart) + currentContent.slice(normalizedEnd)
 
     onChangeNoteContent(nextContent)
     window.requestAnimationFrame(() => {
@@ -248,7 +240,7 @@ export function EditorPane({
       target.focus()
       target.setSelectionRange(nextCursorPosition, nextCursorPosition)
     })
-    if (hasSelection) showActionToast('Deleted')
+    showActionToast('Deleted')
   }
 
   const handleCut = (): void => {
