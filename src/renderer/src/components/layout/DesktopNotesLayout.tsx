@@ -29,8 +29,9 @@ const statusBarVisibleStorageKey = 'online-notes:status-bar-visible'
 const spellCheckEnabledStorageKey = 'online-notes:spell-check-enabled'
 const wordWrapEnabledStorageKey = 'online-notes:word-wrap-enabled'
 const editorFontSettingsStorageKey = 'online-notes:editor-font-settings'
-const privacyPolicyUrl = 'https://onlinenotepad.org/privacy'
-const shortcutsUrl = 'https://onlinenotepad.org/keyboard-shortcuts'
+const productionWebAppBaseUrl = 'https://onlinenotepad.org'
+const privacyPolicyPath = '/privacy'
+const shortcutsPath = '/keyboard-shortcuts'
 
 const defaultEditorFontSettings: EditorFontSettings = {
   fontFamily: 'default',
@@ -83,6 +84,14 @@ function formatPrintTimestamp(date: Date): string {
     minute: '2-digit',
     hour12: true
   })
+}
+
+function buildUrlFromBase(path: string, baseUrl: string): string {
+  try {
+    return new URL(path, baseUrl).toString()
+  } catch {
+    return `${baseUrl.replace(/\/+$/, '')}${path}`
+  }
 }
 
 function loadBrowserNotes(): NoteSummary[] {
@@ -735,9 +744,20 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
     })
   }
 
-  const openHelpUrl = (url: string): void => {
+  const openHelpUrl = (path: string): void => {
+    const browserBaseUrl =
+      window.location.protocol === 'http:' || window.location.protocol === 'https:'
+        ? window.location.origin
+        : productionWebAppBaseUrl
+    const browserUrl = buildUrlFromBase(path, browserBaseUrl)
+    const isLocalDevelopmentOrigin =
+      browserBaseUrl.startsWith('http://localhost:') || browserBaseUrl.startsWith('http://127.0.0.1:')
+    const desktopUrl = isLocalDevelopmentOrigin
+      ? buildUrlFromBase(path, browserBaseUrl)
+      : buildUrlFromBase(path, productionWebAppBaseUrl)
+
     const openInBrowserTab = (): void => {
-      window.open(url, '_blank', 'noopener,noreferrer')
+      window.open(browserUrl, '_blank', 'noopener,noreferrer')
     }
 
     if (!window.electron?.ipcRenderer?.invoke) {
@@ -747,10 +767,10 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
 
     const openInDesktop = async (): Promise<void> => {
       try {
-        const isOpened = await window.electron.ipcRenderer.invoke('window:open-external', url)
-        if (!isOpened) openInBrowserTab()
+        const isOpened = await window.electron.ipcRenderer.invoke('window:open-external', desktopUrl)
+        if (!isOpened) window.open(desktopUrl, '_blank', 'noopener,noreferrer')
       } catch {
-        openInBrowserTab()
+        window.open(desktopUrl, '_blank', 'noopener,noreferrer')
       }
     }
 
@@ -758,11 +778,23 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
   }
 
   const handleOpenShortcutsPage = (): void => {
-    openHelpUrl(shortcutsUrl)
+    const isDesktopApp = /Electron/i.test(navigator.userAgent)
+    if (isDesktopApp) {
+      window.location.hash = '#/keyboard-shortcuts'
+      return
+    }
+
+    openHelpUrl(shortcutsPath)
   }
 
   const handleOpenPrivacyPage = (): void => {
-    openHelpUrl(privacyPolicyUrl)
+    const isDesktopApp = /Electron/i.test(navigator.userAgent)
+    if (isDesktopApp) {
+      window.location.hash = '#/privacy'
+      return
+    }
+
+    openHelpUrl(privacyPolicyPath)
   }
 
   const handleOpenAboutModal = (): void => {
