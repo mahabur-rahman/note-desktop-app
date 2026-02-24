@@ -2,7 +2,12 @@ import type { App } from 'electron'
 import Database from 'better-sqlite3'
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
-import type { NoteInsertRecord, NoteRecord, NotesBackupRecord, NoteUpdatePayload } from '../types/notes'
+import type {
+  NoteInsertRecord,
+  NoteRecord,
+  NotesBackupRecord,
+  NoteUpdatePayload
+} from '../types/notes'
 
 function buildExcerpt(content: string): string {
   const normalizedContent = content.replace(/\s+/g, ' ').trim()
@@ -35,9 +40,7 @@ export function openNotesDatabase(app: App): NotesDatabase {
     )
   `)
 
-  const tableColumns = db
-    .prepare(`PRAGMA table_info(notes)`)
-    .all() as Array<{ name: string }>
+  const tableColumns = db.prepare(`PRAGMA table_info(notes)`).all() as Array<{ name: string }>
 
   if (!tableColumns.some((column) => column.name === 'content')) {
     db.exec(`ALTER TABLE notes ADD COLUMN content TEXT NOT NULL DEFAULT ''`)
@@ -128,7 +131,9 @@ export function openNotesDatabase(app: App): NotesDatabase {
     updateNote: (payload: NoteUpdatePayload) => {
       const noteId = typeof payload?.id === 'string' ? payload.id : ''
       if (!noteId) return null
-      const existingTimestamps = getNoteTimestampsStatement.get(noteId) as { createdAt: number } | undefined
+      const existingTimestamps = getNoteTimestampsStatement.get(noteId) as
+        | { createdAt: number }
+        | undefined
       if (!existingTimestamps) return null
 
       const title = typeof payload.title === 'string' ? payload.title.trim() : ''

@@ -28,7 +28,11 @@ export function setLinuxWindowClass(app: App, wmClass: string): void {
   ;(app as App & { setDesktopName?: (name: string) => void }).setDesktopName?.(`${wmClass}.desktop`)
 }
 
-export function createMainWindow({ iconPath, defaultSize, minimumSize }: MainWindowOptions): BrowserWindow {
+export function createMainWindow({
+  iconPath,
+  defaultSize,
+  minimumSize
+}: MainWindowOptions): BrowserWindow {
   const shouldOpenDevTools = is.dev && process.env['OPEN_DEVTOOLS'] !== '0'
   const mainWindow = new BrowserWindow({
     width: defaultSize.width,

@@ -7,8 +7,11 @@ import { createZipBuffer } from './zip-utils'
 const backupFolderName = 'backup'
 
 function sanitizeFileName(fileName: string): string {
-  const normalized = fileName
-    .replace(/[<>:"/\\|?*\x00-\x1f]/g, ' ')
+  const withoutControlChars = Array.from(fileName, (character) =>
+    character.charCodeAt(0) < 32 ? ' ' : character
+  ).join('')
+  const normalized = withoutControlChars
+    .replace(/[<>:"/\\|?*]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
     .replace(/[. ]+$/g, '')
@@ -37,7 +40,12 @@ export function createNotesBackup(app: App, notes: NotesBackupRecord[]): NotesBa
   const backupName = 'backup.zip'
   const backupPath = join(backupDir, backupName)
   const duplicateNameCounter = new Map<string, number>()
-  const zipEntries: Array<{ name: string; content: Buffer; isDirectory?: boolean; modifiedAt?: Date }> = [
+  const zipEntries: Array<{
+    name: string
+    content: Buffer
+    isDirectory?: boolean
+    modifiedAt?: Date
+  }> = [
     {
       name: `${backupFolderName}/`,
       content: Buffer.alloc(0),
@@ -51,7 +59,8 @@ export function createNotesBackup(app: App, notes: NotesBackupRecord[]): NotesBa
     const duplicateCount = duplicateNameCounter.get(normalizedKey) ?? 0
     duplicateNameCounter.set(normalizedKey, duplicateCount + 1)
 
-    const finalFileBaseName = duplicateCount === 0 ? fileBaseName : `${fileBaseName} ${duplicateCount + 1}`
+    const finalFileBaseName =
+      duplicateCount === 0 ? fileBaseName : `${fileBaseName} ${duplicateCount + 1}`
     const fileName = `${backupFolderName}/${finalFileBaseName}.txt`
     const fileContent = buildNoteFileContent(note)
 

@@ -7,7 +7,12 @@ interface IconButtonProps {
   onClick?: MouseEventHandler<HTMLButtonElement>
 }
 
-export function IconButton({ ariaLabel, className = '', children, onClick }: IconButtonProps): React.JSX.Element {
+export function IconButton({
+  ariaLabel,
+  className = '',
+  children,
+  onClick
+}: IconButtonProps): React.JSX.Element {
   return (
     <button type="button" aria-label={ariaLabel} className={className} onClick={onClick}>
       {children}

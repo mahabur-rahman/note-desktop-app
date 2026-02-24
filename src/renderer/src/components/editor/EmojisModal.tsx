@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { FiX } from 'react-icons/fi'
 import { IconButton } from '../common/IconButton'
 
@@ -113,34 +113,42 @@ const emojis = [
   '🐯'
 ] as const
 
-export function EmojisModal({ isOpen, onClose, onInsert }: EmojisModalProps): React.JSX.Element | null {
+export function EmojisModal({
+  isOpen,
+  onClose,
+  onInsert
+}: EmojisModalProps): React.JSX.Element | null {
   const [selectedEmoji, setSelectedEmoji] = useState('')
 
+  const handleClose = useCallback((): void => {
+    setSelectedEmoji('')
+    onClose()
+  }, [onClose])
+
   useEffect(() => {
-    if (!isOpen) {
-      setSelectedEmoji('')
-      return
-    }
+    if (!isOpen) return
 
     const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') onClose()
+      if (event.key === 'Escape') handleClose()
     }
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [isOpen, onClose])
+  }, [isOpen, handleClose])
 
   if (!isOpen) return null
 
   const handleInsert = (): void => {
     if (!selectedEmoji) return
     onInsert(selectedEmoji)
-    setSelectedEmoji('')
-    onClose()
+    handleClose()
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/45 px-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-black/45 px-4"
+      onClick={handleClose}
+    >
       <div
         role="dialog"
         aria-modal="true"
@@ -153,7 +161,7 @@ export function EmojisModal({ isOpen, onClose, onInsert }: EmojisModalProps): Re
           <IconButton
             ariaLabel="Close emojis modal"
             className="cursor-pointer p-1 text-[22px] text-[#26324a]"
-            onClick={onClose}
+            onClick={handleClose}
           >
             <FiX />
           </IconButton>
@@ -173,8 +181,7 @@ export function EmojisModal({ isOpen, onClose, onInsert }: EmojisModalProps): Re
                 onClick={() => setSelectedEmoji(emoji)}
                 onDoubleClick={() => {
                   onInsert(emoji)
-                  setSelectedEmoji('')
-                  onClose()
+                  handleClose()
                 }}
               >
                 {emoji}

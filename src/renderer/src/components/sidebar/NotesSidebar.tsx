@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
-import { FiAlignLeft, FiCheck, FiDownloadCloud, FiMoreVertical, FiPlus, FiSearch, FiX } from 'react-icons/fi'
+import {
+  FiAlignLeft,
+  FiCheck,
+  FiDownloadCloud,
+  FiMoreVertical,
+  FiPlus,
+  FiSearch,
+  FiX
+} from 'react-icons/fi'
 import type { NoteSummary, SidebarSortMode, SidebarViewMode } from '../../types/ui'
 import { IconButton } from '../common/IconButton'
 
@@ -103,7 +111,9 @@ export function NotesSidebar({
                     setIsSortMenuOpen(false)
                   }}
                 >
-                  <span className="w-4 text-[18px]">{sortMode === 'alphabetical' ? <FiCheck /> : null}</span>
+                  <span className="w-4 text-[18px]">
+                    {sortMode === 'alphabetical' ? <FiCheck /> : null}
+                  </span>
                   <span>Alphabetical</span>
                 </button>
                 <button
@@ -114,7 +124,9 @@ export function NotesSidebar({
                     setIsSortMenuOpen(false)
                   }}
                 >
-                  <span className="w-4 text-[18px]">{sortMode === 'creation-date' ? <FiCheck /> : null}</span>
+                  <span className="w-4 text-[18px]">
+                    {sortMode === 'creation-date' ? <FiCheck /> : null}
+                  </span>
                   <span>Creation date</span>
                 </button>
                 <button
@@ -125,7 +137,9 @@ export function NotesSidebar({
                     setIsSortMenuOpen(false)
                   }}
                 >
-                  <span className="w-4 text-[18px]">{sortMode === 'last-modified' ? <FiCheck /> : null}</span>
+                  <span className="w-4 text-[18px]">
+                    {sortMode === 'last-modified' ? <FiCheck /> : null}
+                  </span>
                   <span>Last modified</span>
                 </button>
               </div>
@@ -149,28 +163,36 @@ export function NotesSidebar({
                   type="button"
                   className={[
                     'flex h-10 w-full items-center gap-3 px-4 text-left text-[15px]',
-                    viewMode === 'compact' ? 'bg-[#eceeef] text-[#202733]' : 'bg-[#f4f4f5] text-[#2f3642]'
+                    viewMode === 'compact'
+                      ? 'bg-[#eceeef] text-[#202733]'
+                      : 'bg-[#f4f4f5] text-[#2f3642]'
                   ].join(' ')}
                   onClick={() => {
                     onChangeViewMode('compact')
                     setIsActionsMenuOpen(false)
                   }}
                 >
-                  <span className="w-4 text-[18px]">{viewMode === 'compact' ? <FiCheck /> : null}</span>
+                  <span className="w-4 text-[18px]">
+                    {viewMode === 'compact' ? <FiCheck /> : null}
+                  </span>
                   <span>Compact View</span>
                 </button>
                 <button
                   type="button"
                   className={[
                     'flex h-10 w-full items-center gap-3 px-4 text-left text-[15px]',
-                    viewMode === 'detailed' ? 'bg-[#eceeef] text-[#202733]' : 'bg-[#f4f4f5] text-[#2f3642]'
+                    viewMode === 'detailed'
+                      ? 'bg-[#eceeef] text-[#202733]'
+                      : 'bg-[#f4f4f5] text-[#2f3642]'
                   ].join(' ')}
                   onClick={() => {
                     onChangeViewMode('detailed')
                     setIsActionsMenuOpen(false)
                   }}
                 >
-                  <span className="w-4 text-[18px]">{viewMode === 'detailed' ? <FiCheck /> : null}</span>
+                  <span className="w-4 text-[18px]">
+                    {viewMode === 'detailed' ? <FiCheck /> : null}
+                  </span>
                   <span>Detailed View</span>
                 </button>
                 <div className="h-px w-full bg-[#d8dde4]" />
@@ -226,8 +248,14 @@ export function NotesSidebar({
                 <h3 className="m-0 text-lg leading-[1.2] font-bold text-[#2f3440]">
                   {note.title || 'Untitled Note'}
                 </h3>
-                {viewMode === 'detailed' && <p className="my-1 text-base text-[#444a56]">{note.excerpt}</p>}
-                <span className={viewMode === 'compact' ? 'text-sm text-[#4f5562]' : 'text-[15px] text-[#4f5562]'}>
+                {viewMode === 'detailed' && (
+                  <p className="my-1 text-base text-[#444a56]">{note.excerpt}</p>
+                )}
+                <span
+                  className={
+                    viewMode === 'compact' ? 'text-sm text-[#4f5562]' : 'text-[15px] text-[#4f5562]'
+                  }
+                >
                   {note.relativeTime}
                 </span>
               </div>

@@ -50,7 +50,9 @@ export function ConfirmModal({
           </IconButton>
         </div>
 
-        <div className="border-b border-[#d8dde5] px-4 py-3 text-[17px] text-[#1f2d45]">{message}</div>
+        <div className="border-b border-[#d8dde5] px-4 py-3 text-[17px] text-[#1f2d45]">
+          {message}
+        </div>
 
         <div className="flex items-center justify-end gap-0.5 px-4 py-3">
           <button

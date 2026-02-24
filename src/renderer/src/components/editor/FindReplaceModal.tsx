@@ -15,7 +15,11 @@ interface FindReplaceModalProps {
   onReplace: (payload: FindReplacePayload) => void
 }
 
-export function FindReplaceModal({ isOpen, onClose, onReplace }: FindReplaceModalProps): React.JSX.Element | null {
+export function FindReplaceModal({
+  isOpen,
+  onClose,
+  onReplace
+}: FindReplaceModalProps): React.JSX.Element | null {
   const [findText, setFindText] = useState('')
   const [replaceText, setReplaceText] = useState('')
   const [matchCase, setMatchCase] = useState(false)
@@ -46,7 +50,9 @@ export function FindReplaceModal({ isOpen, onClose, onReplace }: FindReplaceModa
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-[#d8dde5] px-4 py-2.5">
-          <h2 className="m-0 text-[20px] leading-none font-semibold text-[#29334a]">Find and replace</h2>
+          <h2 className="m-0 text-[20px] leading-none font-semibold text-[#29334a]">
+            Find and replace
+          </h2>
           <IconButton
             ariaLabel="Close find and replace modal"
             className="cursor-pointer p-1 text-[22px] text-[#26324a]"
