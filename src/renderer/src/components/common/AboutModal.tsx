@@ -8,6 +8,8 @@ interface AboutModalProps {
 }
 
 export function AboutModal({ isOpen, onClose }: AboutModalProps): React.JSX.Element | null {
+  const currentYear = new Date().getFullYear()
+
   useEffect(() => {
     if (!isOpen) return
 
@@ -39,12 +41,12 @@ export function AboutModal({ isOpen, onClose }: AboutModalProps): React.JSX.Elem
 
         <div className="px-6 py-8 text-center text-[#1f2d45]">
           <h3 className="m-0 text-[20px] leading-none font-semibold">Online Notepad</h3>
-          <p className="mt-2 mb-6 text-[16px]">Version 2.0 (Build 1018)</p>
+          <p className="mt-2 mb-6 text-[16px]">Version 1.0</p>
           <p className="mx-auto max-w-[560px] text-[17px] leading-[1.4]">
-            Feel free to send comments, suggestions and bug reports to onlinenotepad.org@gmail.com. I&apos;ll try to
+            Feel free to send comments, suggestions and bug reports to annur4395@gmail.com. I&apos;ll try to
             implement it if it&apos;s feasible.
           </p>
-          <p className="mt-8 text-[17px]">Copyright &copy; 2018</p>
+          <p className="mt-8 text-[17px]">Copyright &copy; {currentYear}</p>
         </div>
       </div>
     </div>
