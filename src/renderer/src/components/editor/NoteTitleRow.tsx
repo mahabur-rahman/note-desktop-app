@@ -7,7 +7,11 @@ interface NoteTitleRowProps {
   onDeleteNote: () => void
 }
 
-export function NoteTitleRow({ title, onChangeTitle, onDeleteNote }: NoteTitleRowProps): React.JSX.Element {
+export function NoteTitleRow({
+  title,
+  onChangeTitle,
+  onDeleteNote
+}: NoteTitleRowProps): React.JSX.Element {
   const hasNote = title !== null
 
   return (

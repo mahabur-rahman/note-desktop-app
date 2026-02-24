@@ -71,7 +71,8 @@ export function EditorPane({
   onToggleExpandedView
 }: EditorPaneProps): React.JSX.Element {
   const hasNote = noteTitle !== null
-  const resolvedFontFamily = editorFontSettings.fontFamily === 'default' ? undefined : editorFontSettings.fontFamily
+  const resolvedFontFamily =
+    editorFontSettings.fontFamily === 'default' ? undefined : editorFontSettings.fontFamily
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
   const actionToastTimeoutRef = useRef<number | null>(null)
   const [isSpecialCharactersOpen, setIsSpecialCharactersOpen] = useState(false)
@@ -86,7 +87,9 @@ export function EditorPane({
     return textarea
   }
 
-  const executeTextareaCommand = (command: 'undo' | 'redo' | 'cut' | 'copy' | 'delete'): boolean => {
+  const executeTextareaCommand = (
+    command: 'undo' | 'redo' | 'cut' | 'copy' | 'delete'
+  ): boolean => {
     const textarea = focusTextarea()
     if (!textarea) return false
     if (typeof document.execCommand !== 'function') return false
@@ -150,7 +153,9 @@ export function EditorPane({
     const selectionStart = textarea.selectionStart ?? currentContent.length
     const selectionEnd = textarea.selectionEnd ?? currentContent.length
     const nextContent =
-      currentContent.slice(0, selectionStart) + insertValue + currentContent.slice(Math.max(selectionEnd, selectionStart))
+      currentContent.slice(0, selectionStart) +
+      insertValue +
+      currentContent.slice(Math.max(selectionEnd, selectionStart))
     const nextCursorPosition = selectionStart + insertValue.length
 
     onChangeNoteContent(nextContent)
@@ -247,7 +252,8 @@ export function EditorPane({
       return
     }
 
-    const nextContent = currentContent.slice(0, normalizedStart) + currentContent.slice(normalizedEnd)
+    const nextContent =
+      currentContent.slice(0, normalizedStart) + currentContent.slice(normalizedEnd)
 
     onChangeNoteContent(nextContent)
     window.requestAnimationFrame(() => {
@@ -276,7 +282,8 @@ export function EditorPane({
       })
     }
 
-    const nextContent = currentContent.slice(0, normalizedStart) + currentContent.slice(normalizedEnd)
+    const nextContent =
+      currentContent.slice(0, normalizedStart) + currentContent.slice(normalizedEnd)
     onChangeNoteContent(nextContent)
     window.requestAnimationFrame(() => {
       const target = textareaRef.current
@@ -312,7 +319,12 @@ export function EditorPane({
 
   const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-  const handleFindReplace = ({ findText, replaceText, matchCase, wholeWords }: FindReplacePayload): void => {
+  const handleFindReplace = ({
+    findText,
+    replaceText,
+    matchCase,
+    wholeWords
+  }: FindReplacePayload): void => {
     if (!hasNote) return
     if (findText.length === 0) return
 
@@ -332,7 +344,8 @@ export function EditorPane({
     const hasSelectedMatch = normalizedStart !== normalizedEnd && exactMatchRegex.test(selectedText)
 
     if (hasSelectedMatch) {
-      const nextContent = currentContent.slice(0, normalizedStart) + replaceText + currentContent.slice(normalizedEnd)
+      const nextContent =
+        currentContent.slice(0, normalizedStart) + replaceText + currentContent.slice(normalizedEnd)
       const replaceEnd = normalizedStart + replaceText.length
 
       onChangeNoteContent(nextContent)
@@ -365,7 +378,8 @@ export function EditorPane({
     }
 
     const matchEnd = matchIndex + matchText.length
-    const nextContent = currentContent.slice(0, matchIndex) + replaceText + currentContent.slice(matchEnd)
+    const nextContent =
+      currentContent.slice(0, matchIndex) + replaceText + currentContent.slice(matchEnd)
     const replaceEnd = matchIndex + replaceText.length
 
     onChangeNoteContent(nextContent)
@@ -417,7 +431,11 @@ export function EditorPane({
           isSpellCheckEnabled={isSpellCheckEnabled}
           onToggleSpellCheck={onToggleSpellCheck}
         />
-        <NoteTitleRow title={noteTitle} onChangeTitle={onChangeNoteTitle} onDeleteNote={onDeleteNote} />
+        <NoteTitleRow
+          title={noteTitle}
+          onChangeTitle={onChangeNoteTitle}
+          onDeleteNote={onDeleteNote}
+        />
         <div className="bg-[#f7f7f8] p-4 md:p-5">
           <textarea
             className={[

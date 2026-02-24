@@ -7,7 +7,11 @@ interface AppTopBarProps {
   onToggleSidebar: () => void
 }
 
-export function AppTopBar({ title, isSidebarOpen, onToggleSidebar }: AppTopBarProps): React.JSX.Element {
+export function AppTopBar({
+  title,
+  isSidebarOpen,
+  onToggleSidebar
+}: AppTopBarProps): React.JSX.Element {
   return (
     <header className="flex h-12 items-center gap-3 border-t border-[#1d9ac2] bg-[#05070b] px-4 text-white">
       <IconButton

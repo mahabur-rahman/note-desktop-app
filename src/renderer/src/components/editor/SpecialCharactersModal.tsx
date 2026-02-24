@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { FiX } from 'react-icons/fi'
 import { IconButton } from '../common/IconButton'
 
@@ -227,31 +227,35 @@ export function SpecialCharactersModal({
 }: SpecialCharactersModalProps): React.JSX.Element | null {
   const [selectedCharacter, setSelectedCharacter] = useState('')
 
+  const handleClose = useCallback((): void => {
+    setSelectedCharacter('')
+    onClose()
+  }, [onClose])
+
   useEffect(() => {
-    if (!isOpen) {
-      setSelectedCharacter('')
-      return
-    }
+    if (!isOpen) return
 
     const onKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') onClose()
+      if (event.key === 'Escape') handleClose()
     }
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [isOpen, onClose])
+  }, [isOpen, handleClose])
 
   if (!isOpen) return null
 
   const handleInsert = (): void => {
     if (!selectedCharacter) return
     onInsert(selectedCharacter)
-    setSelectedCharacter('')
-    onClose()
+    handleClose()
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/45 px-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-black/45 px-4"
+      onClick={handleClose}
+    >
       <div
         role="dialog"
         aria-modal="true"
@@ -260,11 +264,13 @@ export function SpecialCharactersModal({
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-[#d8dde5] px-4 py-2.5">
-          <h2 className="m-0 text-[35px] leading-none font-semibold text-[#29334a]">Special Characters</h2>
+          <h2 className="m-0 text-[35px] leading-none font-semibold text-[#29334a]">
+            Special Characters
+          </h2>
           <IconButton
             ariaLabel="Close special characters modal"
             className="cursor-pointer p-1 text-[22px] text-[#26324a]"
-            onClick={onClose}
+            onClick={handleClose}
           >
             <FiX />
           </IconButton>
@@ -284,8 +290,7 @@ export function SpecialCharactersModal({
                 onClick={() => setSelectedCharacter(character)}
                 onDoubleClick={() => {
                   onInsert(character)
-                  setSelectedCharacter('')
-                  onClose()
+                  handleClose()
                 }}
               >
                 {character}

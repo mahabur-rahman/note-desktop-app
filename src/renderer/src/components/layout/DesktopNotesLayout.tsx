@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { useReactToPrint } from 'react-to-print'
-import type { EditorFontSettings, NoteSummary, SidebarSortMode, SidebarViewMode } from '../../types/ui'
+import type {
+  EditorFontSettings,
+  NoteSummary,
+  SidebarSortMode,
+  SidebarViewMode
+} from '../../types/ui'
 import { AboutModal } from '../common/AboutModal'
 import { ConfirmModal } from '../common/ConfirmModal'
 import { SaveAsModal } from '../common/SaveAsModal'
@@ -55,8 +60,11 @@ function buildExcerpt(content: string): string {
 }
 
 function sanitizeDownloadFileName(fileName: string): string {
-  const normalized = fileName
-    .replace(/[<>:"/\\|?*\x00-\x1f]/g, ' ')
+  const withoutControlChars = Array.from(fileName, (character) =>
+    character.charCodeAt(0) < 32 ? ' ' : character
+  ).join('')
+  const normalized = withoutControlChars
+    .replace(/[<>:"/\\|?*]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
     .replace(/[. ]+$/g, '')
@@ -179,7 +187,11 @@ function loadSidebarViewMode(): SidebarViewMode {
 function loadSidebarSortMode(): SidebarSortMode {
   try {
     const rawValue = window.localStorage.getItem(sidebarSortModeStorageKey)
-    if (rawValue === 'alphabetical' || rawValue === 'creation-date' || rawValue === 'last-modified') {
+    if (
+      rawValue === 'alphabetical' ||
+      rawValue === 'creation-date' ||
+      rawValue === 'last-modified'
+    ) {
       return rawValue
     }
     return 'last-modified'
@@ -282,7 +294,10 @@ function downloadBrowserBackup(notes: NoteSummary[]): string {
   return backupName
 }
 
-export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutProps): React.JSX.Element {
+export function DesktopNotesLayout({
+  appTitle,
+  menuItems
+}: DesktopNotesLayoutProps): React.JSX.Element {
   const [notes, setNotes] = useState<NoteSummary[]>([])
   const [activeNoteId, setActiveNoteId] = useState<string>('')
   const [searchQuery, setSearchQuery] = useState('')
@@ -293,7 +308,8 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
   const [isStatusBarVisible, setIsStatusBarVisible] = useState(loadStatusBarVisibility)
   const [isSpellCheckEnabled, setIsSpellCheckEnabled] = useState(loadSpellCheckEnabled)
   const [isWordWrapEnabled, setIsWordWrapEnabled] = useState(loadWordWrapEnabled)
-  const [editorFontSettings, setEditorFontSettings] = useState<EditorFontSettings>(loadEditorFontSettings)
+  const [editorFontSettings, setEditorFontSettings] =
+    useState<EditorFontSettings>(loadEditorFontSettings)
   const [isFontSettingsOpen, setIsFontSettingsOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [isClearModalOpen, setIsClearModalOpen] = useState(false)
@@ -312,12 +328,15 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
           const normalizedTitle = note.title.toLocaleLowerCase()
           const normalizedContent = note.content.toLocaleLowerCase()
           return (
-            normalizedTitle.includes(normalizedSearchQuery) || normalizedContent.includes(normalizedSearchQuery)
+            normalizedTitle.includes(normalizedSearchQuery) ||
+            normalizedContent.includes(normalizedSearchQuery)
           )
         })
   const sortedFilteredNotes = [...filteredNotes].sort((firstNote, secondNote) => {
     if (sidebarSortMode === 'alphabetical') {
-      const titleCompare = firstNote.title.localeCompare(secondNote.title, undefined, { sensitivity: 'base' })
+      const titleCompare = firstNote.title.localeCompare(secondNote.title, undefined, {
+        sensitivity: 'base'
+      })
       if (titleCompare !== 0) return titleCompare
       return secondNote.updatedAt - firstNote.updatedAt
     }
@@ -353,7 +372,9 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
       try {
         const notesApi = getNotesApi()
         const storedNotes = normalizeNotes(
-          notesApi && typeof notesApi.list === 'function' ? await notesApi.list() : loadBrowserNotes()
+          notesApi && typeof notesApi.list === 'function'
+            ? await notesApi.list()
+            : loadBrowserNotes()
         )
         setNotes(storedNotes)
         setActiveNoteId(storedNotes[0]?.id ?? '')
@@ -444,7 +465,10 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
 
     const syncSpellCheck = async (): Promise<void> => {
       try {
-        await window.electron.ipcRenderer.invoke('window:set-spell-check-enabled', isSpellCheckEnabled)
+        await window.electron.ipcRenderer.invoke(
+          'window:set-spell-check-enabled',
+          isSpellCheckEnabled
+        )
       } catch {
         // Ignore IPC failures in non-Electron contexts.
       }
@@ -478,15 +502,17 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
           const updatedNote =
             notesApi && typeof notesApi.update === 'function'
               ? await notesApi.update({
-                id: note.id,
-                title: note.title,
-                content: note.content
-              })
+                  id: note.id,
+                  title: note.title,
+                  content: note.content
+                })
               : note
 
           if (!updatedNote) return
           setNotes((prev) => {
-            const updatedNotes = prev.map((item) => (item.id === updatedNote.id ? updatedNote : item))
+            const updatedNotes = prev.map((item) =>
+              item.id === updatedNote.id ? updatedNote : item
+            )
             if (!notesApi) saveBrowserNotes(updatedNotes)
             return updatedNotes
           })
@@ -560,7 +586,9 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
         clearPendingUpdate()
         const notesApi = getNotesApi()
         const isDeleted =
-          notesApi && typeof notesApi.delete === 'function' ? await notesApi.delete(deletingNoteId) : true
+          notesApi && typeof notesApi.delete === 'function'
+            ? await notesApi.delete(deletingNoteId)
+            : true
         if (!isDeleted) return
         setNotes((prev) => {
           const remainingNotes = prev.filter((note) => note.id !== deletingNoteId)
@@ -586,14 +614,14 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
           notesApi && typeof notesApi.create === 'function'
             ? normalizeNotes([await notesApi.create()])[0]
             : {
-              id: generateNoteId(),
-              title: 'Untitled Note',
-              excerpt: 'Blank',
-              content: '',
-              relativeTime: 'just now',
-              createdAt: now,
-              updatedAt: now
-            }
+                id: generateNoteId(),
+                title: 'Untitled Note',
+                excerpt: 'Blank',
+                content: '',
+                relativeTime: 'just now',
+                createdAt: now,
+                updatedAt: now
+              }
 
         setNotes((prev) => {
           const nextNotes = [createdNote, ...prev]
@@ -609,7 +637,10 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
     void createNote()
   }
 
-  const upsertActiveNoteFromExternalContent = async (title: string, content: string): Promise<void> => {
+  const upsertActiveNoteFromExternalContent = async (
+    title: string,
+    content: string
+  ): Promise<void> => {
     const normalizedTitle = title.trim() || 'Untitled Note'
     const normalizedContent = typeof content === 'string' ? content : ''
     const now = Date.now()
@@ -636,14 +667,14 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
       notesApi && typeof notesApi.create === 'function'
         ? normalizeNotes([await notesApi.create()])[0]
         : {
-          id: generateNoteId(),
-          title: 'Untitled Note',
-          excerpt: 'Blank',
-          content: '',
-          relativeTime: 'just now',
-          createdAt: now,
-          updatedAt: now
-        }
+            id: generateNoteId(),
+            title: 'Untitled Note',
+            excerpt: 'Blank',
+            content: '',
+            relativeTime: 'just now',
+            createdAt: now,
+            updatedAt: now
+          }
 
     const nextNote: NoteSummary = {
       ...createdNote,
@@ -708,14 +739,18 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
   const handleFileSave = (): void => {
     if (!activeNote) return
 
-    const baseFileName = ensureTxtExtension(sanitizeDownloadFileName(activeNote.title || 'Untitled Note'))
+    const baseFileName = ensureTxtExtension(
+      sanitizeDownloadFileName(activeNote.title || 'Untitled Note')
+    )
     downloadNoteAsText(baseFileName, activeNote.content)
   }
 
   const handleFileSaveAs = (): void => {
     if (!activeNote) return
 
-    const defaultFileName = ensureTxtExtension(sanitizeDownloadFileName(activeNote.title || 'Untitled Note'))
+    const defaultFileName = ensureTxtExtension(
+      sanitizeDownloadFileName(activeNote.title || 'Untitled Note')
+    )
     setSaveAsFileName(defaultFileName)
     setIsSaveAsModalOpen(true)
   }
@@ -751,7 +786,8 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
         : productionWebAppBaseUrl
     const browserUrl = buildUrlFromBase(path, browserBaseUrl)
     const isLocalDevelopmentOrigin =
-      browserBaseUrl.startsWith('http://localhost:') || browserBaseUrl.startsWith('http://127.0.0.1:')
+      browserBaseUrl.startsWith('http://localhost:') ||
+      browserBaseUrl.startsWith('http://127.0.0.1:')
     const desktopUrl = isLocalDevelopmentOrigin
       ? buildUrlFromBase(path, browserBaseUrl)
       : buildUrlFromBase(path, productionWebAppBaseUrl)
@@ -767,7 +803,10 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
 
     const openInDesktop = async (): Promise<void> => {
       try {
-        const isOpened = await window.electron.ipcRenderer.invoke('window:open-external', desktopUrl)
+        const isOpened = await window.electron.ipcRenderer.invoke(
+          'window:open-external',
+          desktopUrl
+        )
         if (!isOpened) window.open(desktopUrl, '_blank', 'noopener,noreferrer')
       } catch {
         window.open(desktopUrl, '_blank', 'noopener,noreferrer')
@@ -807,7 +846,9 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
         const notesApi = getNotesApi()
         if (notesApi && typeof notesApi.backup === 'function') {
           const backupResult = await notesApi.backup()
-          window.alert(`Backup completed.\nSaved: ${backupResult.path}\nNotes: ${backupResult.count}`)
+          window.alert(
+            `Backup completed.\nSaved: ${backupResult.path}\nNotes: ${backupResult.count}`
+          )
           return
         }
 
@@ -838,7 +879,8 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
           await notesApi.clear()
         } else if (notesApi && typeof notesApi.delete === 'function') {
           const deleteNote = notesApi.delete
-          const currentNotes = notesApi && typeof notesApi.list === 'function' ? await notesApi.list() : notes
+          const currentNotes =
+            notesApi && typeof notesApi.list === 'function' ? await notesApi.list() : notes
           await Promise.all(currentNotes.map((note) => deleteNote(note.id)))
         } else {
           saveBrowserNotes([])
@@ -1005,7 +1047,9 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
         `}</style>
         <main className="app-print-note-page">
           <div className="app-print-note-meta">
-            <span className="app-print-note-time">{printTimestamp || formatPrintTimestamp(new Date())}</span>
+            <span className="app-print-note-time">
+              {printTimestamp || formatPrintTimestamp(new Date())}
+            </span>
             <span className="app-print-note-title">{printTitle}</span>
             <span />
           </div>

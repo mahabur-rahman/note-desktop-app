@@ -1,8 +1,18 @@
 import { app, BrowserWindow } from 'electron'
-import { APP_NAME, DEFAULT_WINDOW_SIZE, LINUX_WM_CLASS, MINIMUM_WINDOW_SIZE } from './config/app-config'
+import {
+  APP_NAME,
+  DEFAULT_WINDOW_SIZE,
+  LINUX_WM_CLASS,
+  MINIMUM_WINDOW_SIZE
+} from './config/app-config'
 import { registerNotesIpcHandlers } from './ipc/notes-ipc'
 import { registerWindowIpcHandlers } from './ipc/window-ipc'
-import { createMainWindow, ensureLinuxDesktopEntry, setLinuxWindowClass, setMacDockIcon } from './window/main-window'
+import {
+  createMainWindow,
+  ensureLinuxDesktopEntry,
+  setLinuxWindowClass,
+  setMacDockIcon
+} from './window/main-window'
 import icon from '../../resources/icon.png?asset'
 
 // Suppress Chromium/DevTools internal protocol noise in terminal output.

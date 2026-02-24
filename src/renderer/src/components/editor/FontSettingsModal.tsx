@@ -35,7 +35,8 @@ const lineSpaceOptions = [
   { label: 'Double', value: 2 as const }
 ] as const
 
-const optionBaseClass = 'w-full cursor-pointer px-2 py-0.5 text-left text-[15px] text-[#1f2d45] hover:bg-[#e2e4e8]'
+const optionBaseClass =
+  'w-full cursor-pointer px-2 py-0.5 text-left text-[15px] text-[#1f2d45] hover:bg-[#e2e4e8]'
 
 export function FontSettingsModal({
   isOpen,
@@ -86,9 +87,10 @@ export function FontSettingsModal({
                   <button
                     key={option.label}
                     type="button"
-                    className={[optionBaseClass, settings.fontFamily === option.value ? 'bg-[#d2d4d8]' : ''].join(
-                      ' '
-                    )}
+                    className={[
+                      optionBaseClass,
+                      settings.fontFamily === option.value ? 'bg-[#d2d4d8]' : ''
+                    ].join(' ')}
                     onClick={() =>
                       onChange({
                         ...settings,
@@ -109,7 +111,10 @@ export function FontSettingsModal({
                   <button
                     key={sizeValue}
                     type="button"
-                    className={[optionBaseClass, settings.fontSize === sizeValue ? 'bg-[#d2d4d8]' : ''].join(' ')}
+                    className={[
+                      optionBaseClass,
+                      settings.fontSize === sizeValue ? 'bg-[#d2d4d8]' : ''
+                    ].join(' ')}
                     onClick={() =>
                       onChange({
                         ...settings,
@@ -132,9 +137,10 @@ export function FontSettingsModal({
                   <button
                     key={option.label}
                     type="button"
-                    className={[optionBaseClass, settings.fontWeight === option.value ? 'bg-[#d2d4d8]' : ''].join(
-                      ' '
-                    )}
+                    className={[
+                      optionBaseClass,
+                      settings.fontWeight === option.value ? 'bg-[#d2d4d8]' : ''
+                    ].join(' ')}
                     onClick={() =>
                       onChange({
                         ...settings,
@@ -155,9 +161,10 @@ export function FontSettingsModal({
                   <button
                     key={option.label}
                     type="button"
-                    className={[optionBaseClass, settings.fontStyle === option.value ? 'bg-[#d2d4d8]' : ''].join(
-                      ' '
-                    )}
+                    className={[
+                      optionBaseClass,
+                      settings.fontStyle === option.value ? 'bg-[#d2d4d8]' : ''
+                    ].join(' ')}
                     onClick={() =>
                       onChange({
                         ...settings,
@@ -178,9 +185,10 @@ export function FontSettingsModal({
                   <button
                     key={option.label}
                     type="button"
-                    className={[optionBaseClass, settings.lineHeight === option.value ? 'bg-[#d2d4d8]' : ''].join(
-                      ' '
-                    )}
+                    className={[
+                      optionBaseClass,
+                      settings.lineHeight === option.value ? 'bg-[#d2d4d8]' : ''
+                    ].join(' ')}
                     onClick={() =>
                       onChange({
                         ...settings,

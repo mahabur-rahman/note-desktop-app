@@ -160,7 +160,15 @@ export function TopMenu({
       window.removeEventListener('keydown', handleEscapeKey)
       window.removeEventListener('blur', handleWindowBlur)
     }
-  }, [isEditMenuOpen, isFileMenuOpen, isFormatMenuOpen, isHelpMenuOpen, isInsertMenuOpen, isToolsMenuOpen, isViewMenuOpen])
+  }, [
+    isEditMenuOpen,
+    isFileMenuOpen,
+    isFormatMenuOpen,
+    isHelpMenuOpen,
+    isInsertMenuOpen,
+    isToolsMenuOpen,
+    isViewMenuOpen
+  ])
 
   return (
     <header className="flex items-center justify-between border-b border-[#d9dee5] bg-[#f6f6f7] pr-2 pl-2.5 md:pr-2.5 md:pl-4">
@@ -517,7 +525,9 @@ export function TopMenu({
                         setIsInsertMenuOpen(false)
                       }}
                     >
-                      <span className="inline-flex w-5 items-center justify-center text-[16px]">Ω</span>
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">
+                        Ω
+                      </span>
                       <span>Characters</span>
                     </button>
                     <button

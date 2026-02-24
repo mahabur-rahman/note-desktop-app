@@ -34,7 +34,11 @@ export function AboutModal({ isOpen, onClose }: AboutModalProps): React.JSX.Elem
       >
         <div className="flex items-center justify-between border-b border-[#d8dde5] px-4 py-2.5">
           <h2 className="m-0 text-[20px] leading-none font-semibold text-[#29334a]">About</h2>
-          <IconButton ariaLabel="Close about modal" className="cursor-pointer p-1 text-[22px] text-[#26324a]" onClick={onClose}>
+          <IconButton
+            ariaLabel="Close about modal"
+            className="cursor-pointer p-1 text-[22px] text-[#26324a]"
+            onClick={onClose}
+          >
             <FiX />
           </IconButton>
         </div>
@@ -43,8 +47,8 @@ export function AboutModal({ isOpen, onClose }: AboutModalProps): React.JSX.Elem
           <h3 className="m-0 text-[20px] leading-none font-semibold">Online Notepad</h3>
           <p className="mt-2 mb-6 text-[16px]">Version 1.0</p>
           <p className="mx-auto max-w-[560px] text-[17px] leading-[1.4]">
-            Feel free to send comments, suggestions and bug reports to annur4395@gmail.com. I&apos;ll try to
-            implement it if it&apos;s feasible.
+            Feel free to send comments, suggestions and bug reports to annur4395@gmail.com.
+            I&apos;ll try to implement it if it&apos;s feasible.
           </p>
           <p className="mt-8 text-[17px]">Copyright &copy; {currentYear}</p>
         </div>

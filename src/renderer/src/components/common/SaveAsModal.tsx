@@ -62,7 +62,11 @@ export function SaveAsModal({
       >
         <div className="flex items-center justify-between border-b border-[#d8dde5] px-4 py-2.5">
           <h2 className="m-0 text-[33px] leading-none font-semibold text-[#29334a]">Save As</h2>
-          <IconButton ariaLabel="Close save as modal" className="cursor-pointer p-1 text-[22px] text-[#26324a]" onClick={onCancel}>
+          <IconButton
+            ariaLabel="Close save as modal"
+            className="cursor-pointer p-1 text-[22px] text-[#26324a]"
+            onClick={onCancel}
+          >
             <FiX />
           </IconButton>
         </div>

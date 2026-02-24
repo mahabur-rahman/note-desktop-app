@@ -23,8 +23,8 @@ export function ShortcutsPage(): React.JSX.Element {
     <HelpPageLayout heading="Keyboard Shortcuts in Online Notepad">
       <h2 className="mb-3 text-4xl font-semibold">Shortcuts</h2>
       <p className="mb-5 text-sm leading-6">
-        Here is the complete list of key combinations that will help you speed things up when using Online Notepad&apos;s
-        editor.
+        Here is the complete list of key combinations that will help you speed things up when using
+        Online Notepad&apos;s editor.
       </p>
 
       <table className="w-full border-collapse text-sm">
@@ -47,8 +47,8 @@ export function ShortcutsPage(): React.JSX.Element {
       </table>
 
       <div className="mt-6 bg-[#e8ebef] px-4 py-3 text-sm leading-6 text-[#667892]">
-        Note: Most web browsers have built-in additional shortcuts. You may need to click within the editor context to
-        activate the shortcuts listed above.
+        Note: Most web browsers have built-in additional shortcuts. You may need to click within the
+        editor context to activate the shortcuts listed above.
       </div>
     </HelpPageLayout>
   )

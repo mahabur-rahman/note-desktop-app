@@ -26,7 +26,8 @@ const api = {
   notes: {
     list: () => ipcRenderer.invoke('notes:list') as Promise<NoteSummary[]>,
     create: () => ipcRenderer.invoke('notes:create') as Promise<NoteSummary>,
-    update: (payload: NoteUpdateInput) => ipcRenderer.invoke('notes:update', payload) as Promise<NoteSummary | null>,
+    update: (payload: NoteUpdateInput) =>
+      ipcRenderer.invoke('notes:update', payload) as Promise<NoteSummary | null>,
     delete: (noteId: string) => ipcRenderer.invoke('notes:delete', noteId) as Promise<boolean>,
     clear: () => ipcRenderer.invoke('notes:clear') as Promise<number>,
     backup: () => ipcRenderer.invoke('notes:backup') as Promise<NotesBackupResult>
