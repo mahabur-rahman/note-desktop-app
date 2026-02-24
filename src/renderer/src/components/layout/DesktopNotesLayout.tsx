@@ -788,6 +788,12 @@ export function DesktopNotesLayout({ appTitle, menuItems }: DesktopNotesLayoutPr
   }
 
   const handleOpenPrivacyPage = (): void => {
+    const isDesktopApp = /Electron/i.test(navigator.userAgent)
+    if (isDesktopApp) {
+      window.location.hash = '#/privacy'
+      return
+    }
+
     openHelpUrl(privacyPolicyPath)
   }
 

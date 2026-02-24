@@ -44,10 +44,6 @@ export function PrivacyPolicyPage(): React.JSX.Element {
         You are entitled to access, rectify, erase, and restrict processing of personal data where applicable by law.
       </p>
 
-      <h3 className="mb-2 text-xl font-semibold">Contact Us</h3>
-      <p className="mb-4 text-sm leading-6">
-        If you have questions about this Privacy Policy, you can contact us at: onlinenotepad.org@gmail.com
-      </p>
     </HelpPageLayout>
   )
 }
