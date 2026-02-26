@@ -3,6 +3,7 @@ import {
   FiCheck,
   FiCheckSquare,
   FiClock,
+  FiCommand,
   FiCopy,
   FiCornerUpLeft,
   FiCornerUpRight,
@@ -12,16 +13,19 @@ import {
   FiKey,
   FiMaximize2,
   FiMinimize2,
+  FiMoon,
   FiPrinter,
   FiScissors,
   FiSearch,
   FiSave,
   FiShield,
   FiSmile,
+  FiSun,
   FiType,
   FiUploadCloud,
   FiX
 } from 'react-icons/fi'
+import type { AppTheme } from '../../types/ui'
 import { IconButton } from '../common/IconButton'
 
 interface TopMenuProps {
@@ -31,6 +35,8 @@ interface TopMenuProps {
   onFileSave: () => void
   onFileSaveAs: () => void
   onFilePrint: () => void
+  onFileExportMarkdown: () => void
+  onFileExportPdf: () => void
   onHelpShortcuts: () => void
   onHelpPrivacy: () => void
   onHelpAbout: () => void
@@ -53,6 +59,11 @@ interface TopMenuProps {
   onOpenFontSettings: () => void
   isSpellCheckEnabled: boolean
   onToggleSpellCheck: () => void
+  appTheme: AppTheme
+  onChangeTheme: (theme: AppTheme) => void
+  isMarkdownPreviewEnabled: boolean
+  onToggleMarkdownPreview: () => void
+  onOpenCommandPalette: () => void
 }
 
 export function TopMenu({
@@ -62,6 +73,8 @@ export function TopMenu({
   onFileSave,
   onFileSaveAs,
   onFilePrint,
+  onFileExportMarkdown,
+  onFileExportPdf,
   onHelpShortcuts,
   onHelpPrivacy,
   onHelpAbout,
@@ -83,7 +96,12 @@ export function TopMenu({
   onOpenFindReplace,
   onOpenFontSettings,
   isSpellCheckEnabled,
-  onToggleSpellCheck
+  onToggleSpellCheck,
+  appTheme,
+  onChangeTheme,
+  isMarkdownPreviewEnabled,
+  onToggleMarkdownPreview,
+  onOpenCommandPalette
 }: TopMenuProps): React.JSX.Element {
   const [isFileMenuOpen, setIsFileMenuOpen] = useState(false)
   const [isEditMenuOpen, setIsEditMenuOpen] = useState(false)
@@ -142,23 +160,11 @@ export function TopMenu({
       setIsHelpMenuOpen(false)
     }
 
-    const handleWindowBlur = (): void => {
-      setIsFileMenuOpen(false)
-      setIsEditMenuOpen(false)
-      setIsViewMenuOpen(false)
-      setIsToolsMenuOpen(false)
-      setIsFormatMenuOpen(false)
-      setIsInsertMenuOpen(false)
-      setIsHelpMenuOpen(false)
-    }
-
     window.addEventListener('pointerdown', handlePointerDownOutside, true)
     window.addEventListener('keydown', handleEscapeKey)
-    window.addEventListener('blur', handleWindowBlur)
     return () => {
       window.removeEventListener('pointerdown', handlePointerDownOutside, true)
       window.removeEventListener('keydown', handleEscapeKey)
-      window.removeEventListener('blur', handleWindowBlur)
     }
   }, [
     isEditMenuOpen,
@@ -169,6 +175,16 @@ export function TopMenu({
     isToolsMenuOpen,
     isViewMenuOpen
   ])
+
+  const closeAllMenus = (): void => {
+    setIsFileMenuOpen(false)
+    setIsEditMenuOpen(false)
+    setIsViewMenuOpen(false)
+    setIsToolsMenuOpen(false)
+    setIsFormatMenuOpen(false)
+    setIsInsertMenuOpen(false)
+    setIsHelpMenuOpen(false)
+  }
 
   return (
     <header className="flex items-center justify-between border-b border-[#d7dfef] bg-[#f6f9ff] pr-2 pl-2.5 md:pr-2.5 md:pl-4">
@@ -196,7 +212,7 @@ export function TopMenu({
                   {item}
                 </button>
                 {isViewMenuOpen && (
-                  <div className="absolute top-9 left-0 z-40 min-w-[196px] overflow-hidden rounded-lg border border-[#ccd6e8] bg-[#f8faff] shadow-[0_16px_28px_rgba(26,42,71,0.16)]">
+                  <div className="absolute top-9 left-0 z-40 min-w-[220px] overflow-hidden rounded-lg border border-[#ccd6e8] bg-[#f8faff] shadow-[0_16px_28px_rgba(26,42,71,0.16)]">
                     <button
                       type="button"
                       className={[
@@ -229,6 +245,74 @@ export function TopMenu({
                       </span>
                       <span>Full Screen</span>
                     </button>
+                    <button
+                      type="button"
+                      className={[
+                        'flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]',
+                        isMarkdownPreviewEnabled ? 'bg-[#e5ecfa]' : 'bg-transparent'
+                      ].join(' ')}
+                      onClick={() => {
+                        onToggleMarkdownPreview()
+                        setIsViewMenuOpen(false)
+                      }}
+                    >
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">
+                        {isMarkdownPreviewEnabled ? <FiCheck /> : null}
+                      </span>
+                      <span>Markdown Preview</span>
+                    </button>
+                    <div className="h-px w-full bg-[#d9e2f2]" />
+                    <p className="m-0 px-4 pt-2 pb-1 text-[11px] font-semibold tracking-[0.04em] text-[#6a7f9f] uppercase">
+                      Theme
+                    </p>
+                    <button
+                      type="button"
+                      className={[
+                        'flex h-9 w-full items-center gap-2 px-4 text-left text-[14px] transition hover:bg-[#edf2fd]',
+                        appTheme === 'light' ? 'bg-[#e5ecfa] text-[#233753]' : 'text-[#2f425f]'
+                      ].join(' ')}
+                      onClick={() => {
+                        onChangeTheme('light')
+                        setIsViewMenuOpen(false)
+                      }}
+                    >
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">
+                        <FiSun />
+                      </span>
+                      <span>Light</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={[
+                        'flex h-9 w-full items-center gap-2 px-4 text-left text-[14px] transition hover:bg-[#edf2fd]',
+                        appTheme === 'sepia' ? 'bg-[#e5ecfa] text-[#233753]' : 'text-[#2f425f]'
+                      ].join(' ')}
+                      onClick={() => {
+                        onChangeTheme('sepia')
+                        setIsViewMenuOpen(false)
+                      }}
+                    >
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">
+                        <FiSun />
+                      </span>
+                      <span>Sepia</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={[
+                        'flex h-9 w-full items-center gap-2 px-4 text-left text-[14px] transition hover:bg-[#edf2fd]',
+                        appTheme === 'dark' ? 'bg-[#e5ecfa] text-[#233753]' : 'text-[#2f425f]'
+                      ].join(' ')}
+                      onClick={() => {
+                        onChangeTheme('dark')
+                        setIsViewMenuOpen(false)
+                      }}
+                    >
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">
+                        <FiMoon />
+                      </span>
+                      <span>Dark</span>
+                    </button>
                   </div>
                 )}
               </div>
@@ -253,7 +337,7 @@ export function TopMenu({
                   {item}
                 </button>
                 {isFileMenuOpen && (
-                  <div className="absolute top-9 left-0 z-40 min-w-[196px] overflow-hidden rounded-lg border border-[#ccd6e8] bg-[#f8faff] shadow-[0_16px_28px_rgba(26,42,71,0.16)]">
+                  <div className="absolute top-9 left-0 z-40 min-w-[220px] overflow-hidden rounded-lg border border-[#ccd6e8] bg-[#f8faff] shadow-[0_16px_28px_rgba(26,42,71,0.16)]">
                     <button
                       type="button"
                       className="flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]"
@@ -307,6 +391,32 @@ export function TopMenu({
                       <span>Save As</span>
                     </button>
                     <div className="h-px w-full bg-[#d9e2f2]" />
+                    <button
+                      type="button"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]"
+                      onClick={() => {
+                        onFileExportMarkdown()
+                        setIsFileMenuOpen(false)
+                      }}
+                    >
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">
+                        <FiUploadCloud />
+                      </span>
+                      <span>Export Markdown</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]"
+                      onClick={() => {
+                        onFileExportPdf()
+                        setIsFileMenuOpen(false)
+                      }}
+                    >
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">
+                        <FiPrinter />
+                      </span>
+                      <span>Export PDF</span>
+                    </button>
                     <button
                       type="button"
                       className="flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]"
@@ -478,6 +588,19 @@ export function TopMenu({
                         {isSpellCheckEnabled ? <FiCheck /> : null}
                       </span>
                       <span>Spell check</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]"
+                      onClick={() => {
+                        onOpenCommandPalette()
+                        closeAllMenus()
+                      }}
+                    >
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">
+                        <FiCommand />
+                      </span>
+                      <span>Command Palette</span>
                     </button>
                   </div>
                 )}

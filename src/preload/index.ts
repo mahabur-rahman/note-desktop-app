@@ -9,12 +9,34 @@ interface NoteSummary {
   relativeTime: string
   createdAt: number
   updatedAt: number
+  folder: string
+  tags: string[]
+  isPinned: boolean
+  isDeleted: boolean
+  deletedAt: number | null
+  versions: Array<{
+    id: string
+    title: string
+    content: string
+    savedAt: number
+  }>
 }
 
 interface NoteUpdateInput {
   id: string
   title: string
   content: string
+  folder: string
+  tags: string[]
+  isPinned: boolean
+  isDeleted: boolean
+  deletedAt: number | null
+  versions: Array<{
+    id: string
+    title: string
+    content: string
+    savedAt: number
+  }>
 }
 
 interface NotesBackupResult {
