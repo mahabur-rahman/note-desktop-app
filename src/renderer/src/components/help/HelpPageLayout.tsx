@@ -6,7 +6,7 @@ interface HelpPageLayoutProps {
 export function HelpPageLayout({ heading, children }: HelpPageLayoutProps): React.JSX.Element {
   const handleBack = (): void => {
     if (window.location.hash.startsWith('#/')) {
-      window.location.hash = '#/'
+      window.location.hash = '#/app'
       return
     }
 
@@ -15,7 +15,7 @@ export function HelpPageLayout({ heading, children }: HelpPageLayoutProps): Reac
       return
     }
 
-    window.location.assign(new URL('/', window.location.href).toString())
+    window.location.assign(new URL('/app', window.location.href).toString())
   }
 
   return (

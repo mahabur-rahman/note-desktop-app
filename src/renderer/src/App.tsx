@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { DesktopNotesLayout } from './components/layout/DesktopNotesLayout'
 import { PrivacyPolicyPage } from './components/help/PrivacyPolicyPage'
 import { ShortcutsPage } from './components/help/ShortcutsPage'
+import { LandingPage } from './components/landing/LandingPage'
 import { APP_TITLE, MENU_ITEMS } from './constants/ui'
 
 function getActivePath(): string {
@@ -12,6 +13,7 @@ function getActivePath(): string {
 
 function App(): React.JSX.Element {
   const [activePath, setActivePath] = useState<string>(() => getActivePath())
+  const isDesktopApp = /Electron/i.test(navigator.userAgent)
 
   useEffect(() => {
     const handleLocationChange = (): void => {
@@ -35,7 +37,15 @@ function App(): React.JSX.Element {
     return <PrivacyPolicyPage />
   }
 
-  return <DesktopNotesLayout appTitle={APP_TITLE} menuItems={MENU_ITEMS} />
+  if (activePath === '/app') {
+    return <DesktopNotesLayout appTitle={APP_TITLE} menuItems={MENU_ITEMS} />
+  }
+
+  if (isDesktopApp && (activePath === '/' || activePath === '/index.html')) {
+    return <DesktopNotesLayout appTitle={APP_TITLE} menuItems={MENU_ITEMS} />
+  }
+
+  return <LandingPage />
 }
 
 export default App
