@@ -234,7 +234,7 @@ export function LandingPage(): React.JSX.Element {
 
       <footer className="border-t border-[#294068] bg-[linear-gradient(90deg,#0c1528_0%,#18325b_58%,#214677_100%)] text-[#d8e2f5]">
         <div className="mx-auto flex w-full max-w-[1180px] flex-col gap-3 px-5 py-6 text-sm md:flex-row md:items-center md:justify-between">
-          <p>NoteNova Studio</p>
+          <p>Copyright © 2026 NoteNova Studio</p>
           <div className="flex items-center gap-4 text-xs">
             <a href="/privacy" className="transition hover:text-white">
               Privacy Policy
