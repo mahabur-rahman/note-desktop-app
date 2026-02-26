@@ -70,6 +70,7 @@ export function EditorPane({
   isExpandedView,
   onToggleExpandedView
 }: EditorPaneProps): React.JSX.Element {
+  const currentYear = new Date().getFullYear()
   const hasNote = noteTitle !== null
   const noteLineCount = noteContent ? noteContent.split(/\r?\n/).length : 0
   const resolvedFontFamily =
@@ -461,9 +462,12 @@ export function EditorPane({
           />
         </div>
         {isStatusBarVisible && (
-          <div className="flex items-center justify-between border-t border-[#d7dfef] bg-[#f4f7ff] px-3 text-xs font-medium text-[#3e5b88] md:px-4 md:text-sm">
-            <span>{`Characters: ${characterCount}`}</span>
-            <span>{`Lines: ${noteLineCount}`}</span>
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center border-t border-[#36547d] bg-[linear-gradient(90deg,#112843_0%,#16345a_52%,#1d446f_100%)] px-3 py-1 text-xs font-medium text-[#d8e7ff] md:px-4 md:text-sm">
+            <span className="justify-self-start">{`Characters: ${characterCount}`}</span>
+            <span className="justify-self-center text-[11px] font-semibold text-[#b8d1ff] md:text-xs">
+              {`Copyright © ${currentYear} NoteNova Studio`}
+            </span>
+            <span className="justify-self-end">{`Lines: ${noteLineCount}`}</span>
           </div>
         )}
       </section>
