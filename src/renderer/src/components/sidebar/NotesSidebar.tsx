@@ -69,7 +69,7 @@ export function NotesSidebar({
     <aside className="flex h-full min-h-0 flex-col bg-[linear-gradient(180deg,#f7f9ff_0%,#f0f4fc_100%)]">
       <div className="border-b border-[#d9e1ef]">
         <button
-          className="mx-3 my-4 inline-flex h-[50px] w-[calc(100%_-_24px)] cursor-pointer items-center justify-center gap-2 rounded-lg bg-[linear-gradient(90deg,#4760f3_0%,#5f75ff_100%)] text-sm font-semibold text-white shadow-[0_8px_16px_rgba(73,96,238,0.25)] transition hover:brightness-105"
+          className="mx-3 my-4 inline-flex h-[50px] w-[calc(100%_-_24px)] cursor-pointer items-center justify-center gap-2 rounded-lg border border-[#2a5d93] bg-[linear-gradient(90deg,#163a63_0%,#235886_55%,#2d6ea5_100%)] text-sm font-semibold text-white shadow-[0_10px_18px_rgba(25,58,97,0.28)] transition hover:brightness-110"
           type="button"
           onClick={onCreateNote}
         >
