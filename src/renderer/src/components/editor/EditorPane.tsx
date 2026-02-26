@@ -398,7 +398,7 @@ export function EditorPane({
         className={[
           'grid h-full min-h-[62dvh] bg-[linear-gradient(180deg,#f9fbff_0%,#f5f8ff_100%)] md:min-h-0',
           isStatusBarVisible
-            ? 'grid-rows-[48px_54px_minmax(320px,1fr)_32px] md:grid-rows-[52px_62px_minmax(0,1fr)_34px]'
+            ? 'grid-rows-[48px_54px_minmax(320px,1fr)_24px] md:grid-rows-[52px_62px_minmax(0,1fr)_26px]'
             : 'grid-rows-[48px_54px_minmax(320px,1fr)] md:grid-rows-[52px_62px_minmax(0,1fr)]'
         ].join(' ')}
       >
@@ -461,7 +461,7 @@ export function EditorPane({
           />
         </div>
         {isStatusBarVisible && (
-          <div className="flex items-center justify-between border-t border-[#36547d] bg-[linear-gradient(90deg,#112843_0%,#16345a_52%,#1d446f_100%)] px-3 py-1 text-xs font-medium text-[#d8e7ff] md:px-4 md:text-sm">
+          <div className="flex items-center justify-between border-t border-[#9eb8df] bg-[linear-gradient(90deg,#dfe8fb_0%,#d8e3f8_50%,#d2def4_100%)] px-3 text-[11px] font-semibold text-[#334e78] md:px-4 md:text-xs">
             <span>{`Characters: ${characterCount}`}</span>
             <span>{`Lines: ${noteLineCount}`}</span>
           </div>

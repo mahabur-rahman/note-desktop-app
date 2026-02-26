@@ -30,7 +30,7 @@ interface NotesApi {
 const browserNotesStorageKey = 'online-notes:web-notes'
 const sidebarViewModeStorageKey = 'online-notes:sidebar-view-mode'
 const sidebarSortModeStorageKey = 'online-notes:sidebar-sort-mode'
-const statusBarVisibleStorageKey = 'online-notes:status-bar-visible'
+const statusBarVisibleStorageKey = 'online-notes:status-bar-visible:v2'
 const spellCheckEnabledStorageKey = 'online-notes:spell-check-enabled'
 const wordWrapEnabledStorageKey = 'online-notes:word-wrap-enabled'
 const editorFontSettingsStorageKey = 'online-notes:editor-font-settings'
@@ -203,9 +203,10 @@ function loadSidebarSortMode(): SidebarSortMode {
 function loadStatusBarVisibility(): boolean {
   try {
     const rawValue = window.localStorage.getItem(statusBarVisibleStorageKey)
+    if (rawValue === null) return true
     return rawValue === 'true'
   } catch {
-    return false
+    return true
   }
 }
 
