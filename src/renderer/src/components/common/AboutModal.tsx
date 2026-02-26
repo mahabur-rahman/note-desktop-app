@@ -48,7 +48,7 @@ export function AboutModal({ isOpen, onClose }: AboutModalProps): React.JSX.Elem
 
         <div className="px-6 py-8 text-center text-[#1f2d45]">
           <h3 className="m-0 text-[24px] leading-none font-semibold text-[#253a5c]">
-            Online Notepad
+            NoteNova Studio
           </h3>
           <p className="mt-2 mb-6 text-[15px] font-medium text-[#516685]">Version 1.0</p>
           <p className="mx-auto max-w-[560px] text-[16px] leading-[1.5] text-[#3f5473]">

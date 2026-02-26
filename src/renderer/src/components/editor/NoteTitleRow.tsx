@@ -32,7 +32,7 @@ export function NoteTitleRow({
         className={[
           'bg-transparent p-1 text-lg md:text-[22px]',
           hasNote
-            ? 'cursor-pointer text-[#304a72] transition hover:text-[#c3354f]'
+            ? 'cursor-pointer text-[#c63d56] transition hover:text-[#ad2f47]'
             : 'cursor-not-allowed text-[#9aa2af]'
         ].join(' ')}
         onClick={hasNote ? onDeleteNote : undefined}

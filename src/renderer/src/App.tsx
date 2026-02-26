@@ -29,6 +29,52 @@ function App(): React.JSX.Element {
     }
   }, [])
 
+  useEffect(() => {
+    if (isDesktopApp) return
+
+    const seoByPath: Record<string, { title: string; description: string }> = {
+      '/': {
+        title: 'NoteNova Studio - Professional Notes Workspace',
+        description: 'Write, edit, and export notes faster with NoteNova Studio on web and desktop.'
+      },
+      '/app': {
+        title: 'NoteNova Studio App - Write, Organize, and Export Notes',
+        description:
+          'Open the NoteNova workspace for focused writing, smart editing tools, and quick exports.'
+      },
+      '/keyboard-shortcuts': {
+        title: 'NoteNova Keyboard Shortcuts - Faster Editing Workflow',
+        description:
+          'Use powerful keyboard shortcuts in NoteNova Studio to speed up editing and note management.'
+      },
+      '/shortcuts': {
+        title: 'NoteNova Keyboard Shortcuts - Faster Editing Workflow',
+        description:
+          'Use powerful keyboard shortcuts in NoteNova Studio to speed up editing and note management.'
+      },
+      '/privacy': {
+        title: 'NoteNova Privacy Policy',
+        description: 'Read the privacy policy and data usage terms for NoteNova Studio.'
+      },
+      '/privacy-policy': {
+        title: 'NoteNova Privacy Policy',
+        description: 'Read the privacy policy and data usage terms for NoteNova Studio.'
+      }
+    }
+
+    const seo = seoByPath[activePath] ??
+      seoByPath['/'] ?? {
+        title: 'NoteNova Studio',
+        description: 'Professional note-taking workspace.'
+      }
+
+    document.title = seo.title
+    const descriptionMeta = document.querySelector('meta[name="description"]')
+    if (descriptionMeta) {
+      descriptionMeta.setAttribute('content', seo.description)
+    }
+  }, [activePath, isDesktopApp])
+
   if (activePath === '/keyboard-shortcuts' || activePath === '/shortcuts') {
     return <ShortcutsPage />
   }

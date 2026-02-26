@@ -899,7 +899,7 @@ export function DesktopNotesLayout({
   }
 
   return (
-    <main className="flex h-screen w-full flex-col bg-[radial-gradient(circle_at_top,#f3f6ff_0%,#edf2fb_42%,#e8eef9_100%)] font-sans text-[#2f3340]">
+    <main className="flex h-screen w-full flex-col bg-[radial-gradient(circle_at_top,#f7faff_0%,#edf4ff_45%,#e6eefb_100%)] font-sans text-[#2f3340]">
       {!isExpandedView && (
         <AppTopBar
           title={appTitle}

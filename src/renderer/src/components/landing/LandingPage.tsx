@@ -25,16 +25,31 @@ const compatibilityItems = [
   { platform: 'Input Methods', support: 'Keyboard + mouse with shortcut-first workflow' }
 ] as const
 
+const valueHighlights = [
+  {
+    title: 'Fast Daily Workflow',
+    description: 'Designed to capture ideas and complete edits quickly without UI clutter.'
+  },
+  {
+    title: 'Cross-Platform Continuity',
+    description: 'The same writing experience is available across browser and desktop environments.'
+  },
+  {
+    title: 'Reliable Export Pipeline',
+    description: 'Save As and print features help you share notes cleanly for external use.'
+  }
+] as const
+
 export function LandingPage(): React.JSX.Element {
   return (
     <main
       className="min-h-screen bg-[radial-gradient(circle_at_top,#f8fbff_0%,#eef3ff_42%,#e9f0fc_100%)] text-[#1f2d45]"
       style={{ fontFamily: '"Trebuchet MS", "Segoe UI", sans-serif' }}
     >
-      <header className="sticky top-0 z-20 border-b border-[#ccd5e6] bg-[#0c1117]/95 backdrop-blur">
+      <header className="sticky top-0 z-20 border-b border-[#263d66] bg-[linear-gradient(90deg,#0b1324_0%,#162b4c_55%,#15335b_100%)] backdrop-blur">
         <div className="mx-auto flex h-14 w-full max-w-[1180px] items-center justify-between px-5">
           <a href="/" className="text-sm font-semibold tracking-[0.14em] text-white">
-            ONLINE NOTEPAD
+            NOTENOVA STUDIO
           </a>
           <nav className="flex items-center gap-5 text-xs font-semibold text-[#dce2ed]">
             <a href="#overview" className="transition hover:text-white">
@@ -73,8 +88,8 @@ export function LandingPage(): React.JSX.Element {
               </span>
             </h1>
             <p className="mt-5 max-w-[620px] text-base leading-7 text-[#475d81] md:text-lg">
-              Online Notepad helps you draft, edit, and export notes in seconds. Built for speed
-              with a practical UI across web and desktop.
+              NoteNova Studio helps you draft, edit, and export notes in seconds. Built for speed
+              with a practical interface across web and desktop.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <a
@@ -113,7 +128,7 @@ export function LandingPage(): React.JSX.Element {
             </div>
             <div className="overflow-hidden rounded-lg border border-[#d7deec] bg-[#f0f3fb]">
               <iframe
-                title="Online Notepad App Preview"
+                title="NoteNova Studio App Preview"
                 src="/app"
                 loading="lazy"
                 className="h-[420px] w-full bg-white md:h-[480px]"
@@ -196,9 +211,30 @@ export function LandingPage(): React.JSX.Element {
         </div>
       </section>
 
-      <footer className="border-t border-[#c8d2e5] bg-[linear-gradient(90deg,#111a2d_0%,#1b2f54_100%)] text-[#d5deef]">
+      <section className="mx-auto w-full max-w-[1180px] px-5 pb-12 md:pb-14">
+        <div className="rounded-xl border border-[#cbd6ea] bg-[linear-gradient(90deg,#f7f9ff_0%,#f2f7ff_100%)] p-6 md:p-8">
+          <h2 className="text-2xl font-semibold text-[#203658] md:text-3xl">
+            <span className="bg-[linear-gradient(90deg,#2f4f93_0%,#4f63f6_50%,#2f8ccb_100%)] bg-clip-text text-transparent">
+              Why teams choose NoteNova
+            </span>
+          </h2>
+          <div className="mt-5 grid gap-4 md:grid-cols-3">
+            {valueHighlights.map((item) => (
+              <article
+                key={item.title}
+                className="rounded-lg border border-[#d2dcef] bg-white p-4 shadow-[0_8px_20px_rgba(28,44,77,0.06)]"
+              >
+                <h3 className="text-base font-semibold text-[#294165]">{item.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-[#4d617f]">{item.description}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <footer className="border-t border-[#294068] bg-[linear-gradient(90deg,#0c1528_0%,#18325b_58%,#214677_100%)] text-[#d8e2f5]">
         <div className="mx-auto flex w-full max-w-[1180px] flex-col gap-3 px-5 py-6 text-sm md:flex-row md:items-center md:justify-between">
-          <p>Online Notepad</p>
+          <p>NoteNova Studio</p>
           <div className="flex items-center gap-4 text-xs">
             <a href="/privacy" className="transition hover:text-white">
               Privacy Policy
