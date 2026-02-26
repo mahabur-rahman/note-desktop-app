@@ -3,6 +3,7 @@ import {
   FiCheck,
   FiCheckSquare,
   FiClock,
+  FiCommand,
   FiCopy,
   FiCornerUpLeft,
   FiCornerUpRight,
@@ -12,16 +13,19 @@ import {
   FiKey,
   FiMaximize2,
   FiMinimize2,
+  FiMoon,
   FiPrinter,
   FiScissors,
   FiSearch,
   FiSave,
   FiShield,
   FiSmile,
+  FiSun,
   FiType,
   FiUploadCloud,
   FiX
 } from 'react-icons/fi'
+import type { AppTheme } from '../../types/ui'
 import { IconButton } from '../common/IconButton'
 
 interface TopMenuProps {
@@ -31,6 +35,8 @@ interface TopMenuProps {
   onFileSave: () => void
   onFileSaveAs: () => void
   onFilePrint: () => void
+  onFileExportMarkdown: () => void
+  onFileExportPdf: () => void
   onHelpShortcuts: () => void
   onHelpPrivacy: () => void
   onHelpAbout: () => void
@@ -53,6 +59,11 @@ interface TopMenuProps {
   onOpenFontSettings: () => void
   isSpellCheckEnabled: boolean
   onToggleSpellCheck: () => void
+  appTheme: AppTheme
+  onChangeTheme: (theme: AppTheme) => void
+  isMarkdownPreviewEnabled: boolean
+  onToggleMarkdownPreview: () => void
+  onOpenCommandPalette: () => void
 }
 
 export function TopMenu({
@@ -62,6 +73,8 @@ export function TopMenu({
   onFileSave,
   onFileSaveAs,
   onFilePrint,
+  onFileExportMarkdown,
+  onFileExportPdf,
   onHelpShortcuts,
   onHelpPrivacy,
   onHelpAbout,
@@ -83,7 +96,12 @@ export function TopMenu({
   onOpenFindReplace,
   onOpenFontSettings,
   isSpellCheckEnabled,
-  onToggleSpellCheck
+  onToggleSpellCheck,
+  appTheme,
+  onChangeTheme,
+  isMarkdownPreviewEnabled,
+  onToggleMarkdownPreview,
+  onOpenCommandPalette
 }: TopMenuProps): React.JSX.Element {
   const [isFileMenuOpen, setIsFileMenuOpen] = useState(false)
   const [isEditMenuOpen, setIsEditMenuOpen] = useState(false)
@@ -142,23 +160,11 @@ export function TopMenu({
       setIsHelpMenuOpen(false)
     }
 
-    const handleWindowBlur = (): void => {
-      setIsFileMenuOpen(false)
-      setIsEditMenuOpen(false)
-      setIsViewMenuOpen(false)
-      setIsToolsMenuOpen(false)
-      setIsFormatMenuOpen(false)
-      setIsInsertMenuOpen(false)
-      setIsHelpMenuOpen(false)
-    }
-
     window.addEventListener('pointerdown', handlePointerDownOutside, true)
     window.addEventListener('keydown', handleEscapeKey)
-    window.addEventListener('blur', handleWindowBlur)
     return () => {
       window.removeEventListener('pointerdown', handlePointerDownOutside, true)
       window.removeEventListener('keydown', handleEscapeKey)
-      window.removeEventListener('blur', handleWindowBlur)
     }
   }, [
     isEditMenuOpen,
@@ -170,8 +176,18 @@ export function TopMenu({
     isViewMenuOpen
   ])
 
+  const closeAllMenus = (): void => {
+    setIsFileMenuOpen(false)
+    setIsEditMenuOpen(false)
+    setIsViewMenuOpen(false)
+    setIsToolsMenuOpen(false)
+    setIsFormatMenuOpen(false)
+    setIsInsertMenuOpen(false)
+    setIsHelpMenuOpen(false)
+  }
+
   return (
-    <header className="flex items-center justify-between border-b border-[#d9dee5] bg-[#f6f6f7] pr-2 pl-2.5 md:pr-2.5 md:pl-4">
+    <header className="flex items-center justify-between border-b border-[#d7dfef] bg-[#f6f9ff] pr-2 pl-2.5 md:pr-2.5 md:pl-4">
       <nav className="flex min-w-0 flex-1 items-center gap-3 overflow-visible md:gap-5">
         {items.map((item) => (
           <div key={item} className="relative">
@@ -179,8 +195,8 @@ export function TopMenu({
               <div ref={viewMenuRef}>
                 <button
                   className={[
-                    'cursor-pointer whitespace-nowrap bg-transparent p-0 text-sm text-[#2f3440] md:text-[15px]',
-                    isViewMenuOpen ? 'text-[#1f232d]' : ''
+                    'cursor-pointer whitespace-nowrap rounded px-1.5 py-1 text-sm font-medium text-[#324562] transition hover:bg-[#eaf0fc] hover:text-[#1f2f4e] md:text-[15px]',
+                    isViewMenuOpen ? 'bg-[#e6edff] text-[#1f2f52]' : ''
                   ].join(' ')}
                   type="button"
                   onClick={() => {
@@ -196,12 +212,12 @@ export function TopMenu({
                   {item}
                 </button>
                 {isViewMenuOpen && (
-                  <div className="absolute top-7 left-0 z-40 min-w-[186px] border border-[#d2d7de] bg-[#f4f4f5] shadow-[0_10px_24px_rgba(25,32,45,0.12)]">
+                  <div className="absolute top-9 left-0 z-40 min-w-[220px] overflow-hidden rounded-lg border border-[#ccd6e8] bg-[#f8faff] shadow-[0_16px_28px_rgba(26,42,71,0.16)]">
                     <button
                       type="button"
                       className={[
-                        'flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]',
-                        isStatusBarVisible ? 'bg-[#eceeef]' : 'bg-transparent'
+                        'flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]',
+                        isStatusBarVisible ? 'bg-[#e5ecfa]' : 'bg-transparent'
                       ].join(' ')}
                       onClick={() => {
                         onToggleStatusBar()
@@ -216,8 +232,8 @@ export function TopMenu({
                     <button
                       type="button"
                       className={[
-                        'flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]',
-                        isExpandedView ? 'bg-[#eceeef]' : 'bg-transparent'
+                        'flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]',
+                        isExpandedView ? 'bg-[#e5ecfa]' : 'bg-transparent'
                       ].join(' ')}
                       onClick={() => {
                         onToggleExpandedView()
@@ -229,6 +245,74 @@ export function TopMenu({
                       </span>
                       <span>Full Screen</span>
                     </button>
+                    <button
+                      type="button"
+                      className={[
+                        'flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]',
+                        isMarkdownPreviewEnabled ? 'bg-[#e5ecfa]' : 'bg-transparent'
+                      ].join(' ')}
+                      onClick={() => {
+                        onToggleMarkdownPreview()
+                        setIsViewMenuOpen(false)
+                      }}
+                    >
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">
+                        {isMarkdownPreviewEnabled ? <FiCheck /> : null}
+                      </span>
+                      <span>Markdown Preview</span>
+                    </button>
+                    <div className="h-px w-full bg-[#d9e2f2]" />
+                    <p className="m-0 px-4 pt-2 pb-1 text-[11px] font-semibold tracking-[0.04em] text-[#6a7f9f] uppercase">
+                      Theme
+                    </p>
+                    <button
+                      type="button"
+                      className={[
+                        'flex h-9 w-full items-center gap-2 px-4 text-left text-[14px] transition hover:bg-[#edf2fd]',
+                        appTheme === 'light' ? 'bg-[#e5ecfa] text-[#233753]' : 'text-[#2f425f]'
+                      ].join(' ')}
+                      onClick={() => {
+                        onChangeTheme('light')
+                        setIsViewMenuOpen(false)
+                      }}
+                    >
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">
+                        <FiSun />
+                      </span>
+                      <span>Light</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={[
+                        'flex h-9 w-full items-center gap-2 px-4 text-left text-[14px] transition hover:bg-[#edf2fd]',
+                        appTheme === 'sepia' ? 'bg-[#e5ecfa] text-[#233753]' : 'text-[#2f425f]'
+                      ].join(' ')}
+                      onClick={() => {
+                        onChangeTheme('sepia')
+                        setIsViewMenuOpen(false)
+                      }}
+                    >
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">
+                        <FiSun />
+                      </span>
+                      <span>Sepia</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={[
+                        'flex h-9 w-full items-center gap-2 px-4 text-left text-[14px] transition hover:bg-[#edf2fd]',
+                        appTheme === 'dark' ? 'bg-[#e5ecfa] text-[#233753]' : 'text-[#2f425f]'
+                      ].join(' ')}
+                      onClick={() => {
+                        onChangeTheme('dark')
+                        setIsViewMenuOpen(false)
+                      }}
+                    >
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">
+                        <FiMoon />
+                      </span>
+                      <span>Dark</span>
+                    </button>
                   </div>
                 )}
               </div>
@@ -236,8 +320,8 @@ export function TopMenu({
               <div ref={fileMenuRef}>
                 <button
                   className={[
-                    'cursor-pointer whitespace-nowrap bg-transparent p-0 text-sm text-[#2f3440] md:text-[15px]',
-                    isFileMenuOpen ? 'text-[#1f232d]' : ''
+                    'cursor-pointer whitespace-nowrap rounded px-1.5 py-1 text-sm font-medium text-[#324562] transition hover:bg-[#eaf0fc] hover:text-[#1f2f4e] md:text-[15px]',
+                    isFileMenuOpen ? 'bg-[#e6edff] text-[#1f2f52]' : ''
                   ].join(' ')}
                   type="button"
                   onClick={() => {
@@ -253,10 +337,10 @@ export function TopMenu({
                   {item}
                 </button>
                 {isFileMenuOpen && (
-                  <div className="absolute top-7 left-0 z-40 min-w-[186px] border border-[#d2d7de] bg-[#f4f4f5] shadow-[0_10px_24px_rgba(25,32,45,0.12)]">
+                  <div className="absolute top-9 left-0 z-40 min-w-[220px] overflow-hidden rounded-lg border border-[#ccd6e8] bg-[#f8faff] shadow-[0_16px_28px_rgba(26,42,71,0.16)]">
                     <button
                       type="button"
-                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]"
                       onClick={() => {
                         onFileNew()
                         setIsFileMenuOpen(false)
@@ -269,7 +353,7 @@ export function TopMenu({
                     </button>
                     <button
                       type="button"
-                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]"
                       onClick={() => {
                         onFileOpen()
                         setIsFileMenuOpen(false)
@@ -282,7 +366,7 @@ export function TopMenu({
                     </button>
                     <button
                       type="button"
-                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]"
                       onClick={() => {
                         onFileSave()
                         setIsFileMenuOpen(false)
@@ -295,7 +379,7 @@ export function TopMenu({
                     </button>
                     <button
                       type="button"
-                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]"
                       onClick={() => {
                         onFileSaveAs()
                         setIsFileMenuOpen(false)
@@ -306,10 +390,36 @@ export function TopMenu({
                       </span>
                       <span>Save As</span>
                     </button>
-                    <div className="h-px w-full bg-[#d8dde4]" />
+                    <div className="h-px w-full bg-[#d9e2f2]" />
                     <button
                       type="button"
-                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]"
+                      onClick={() => {
+                        onFileExportMarkdown()
+                        setIsFileMenuOpen(false)
+                      }}
+                    >
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">
+                        <FiUploadCloud />
+                      </span>
+                      <span>Export Markdown</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]"
+                      onClick={() => {
+                        onFileExportPdf()
+                        setIsFileMenuOpen(false)
+                      }}
+                    >
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">
+                        <FiPrinter />
+                      </span>
+                      <span>Export PDF</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]"
                       onClick={() => {
                         onFilePrint()
                         setIsFileMenuOpen(false)
@@ -327,8 +437,8 @@ export function TopMenu({
               <div ref={editMenuRef}>
                 <button
                   className={[
-                    'cursor-pointer whitespace-nowrap bg-transparent p-0 text-sm text-[#2f3440] md:text-[15px]',
-                    isEditMenuOpen ? 'text-[#1f232d]' : ''
+                    'cursor-pointer whitespace-nowrap rounded px-1.5 py-1 text-sm font-medium text-[#324562] transition hover:bg-[#eaf0fc] hover:text-[#1f2f4e] md:text-[15px]',
+                    isEditMenuOpen ? 'bg-[#e6edff] text-[#1f2f52]' : ''
                   ].join(' ')}
                   type="button"
                   onClick={() => {
@@ -344,10 +454,10 @@ export function TopMenu({
                   {item}
                 </button>
                 {isEditMenuOpen && (
-                  <div className="absolute top-7 left-0 z-40 min-w-[186px] border border-[#d2d7de] bg-[#f4f4f5] shadow-[0_10px_24px_rgba(25,32,45,0.12)]">
+                  <div className="absolute top-9 left-0 z-40 min-w-[196px] overflow-hidden rounded-lg border border-[#ccd6e8] bg-[#f8faff] shadow-[0_16px_28px_rgba(26,42,71,0.16)]">
                     <button
                       type="button"
-                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]"
                       onClick={() => {
                         onUndo()
                         setIsEditMenuOpen(false)
@@ -360,7 +470,7 @@ export function TopMenu({
                     </button>
                     <button
                       type="button"
-                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]"
                       onClick={() => {
                         onRedo()
                         setIsEditMenuOpen(false)
@@ -371,10 +481,10 @@ export function TopMenu({
                       </span>
                       <span>Redo</span>
                     </button>
-                    <div className="h-px w-full bg-[#d8dde4]" />
+                    <div className="h-px w-full bg-[#d9e2f2]" />
                     <button
                       type="button"
-                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]"
                       onClick={() => {
                         onCut()
                         setIsEditMenuOpen(false)
@@ -387,7 +497,7 @@ export function TopMenu({
                     </button>
                     <button
                       type="button"
-                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]"
                       onClick={() => {
                         onCopy()
                         setIsEditMenuOpen(false)
@@ -400,7 +510,7 @@ export function TopMenu({
                     </button>
                     <button
                       type="button"
-                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]"
                       onClick={() => {
                         onDeleteSelection()
                         setIsEditMenuOpen(false)
@@ -413,7 +523,7 @@ export function TopMenu({
                     </button>
                     <button
                       type="button"
-                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]"
                       onClick={() => {
                         onSelectAll()
                         setIsEditMenuOpen(false)
@@ -424,10 +534,10 @@ export function TopMenu({
                       </span>
                       <span>Select All</span>
                     </button>
-                    <div className="h-px w-full bg-[#d8dde4]" />
+                    <div className="h-px w-full bg-[#d9e2f2]" />
                     <button
                       type="button"
-                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]"
                       onClick={() => {
                         onOpenFindReplace()
                         setIsEditMenuOpen(false)
@@ -445,8 +555,8 @@ export function TopMenu({
               <div ref={toolsMenuRef}>
                 <button
                   className={[
-                    'cursor-pointer whitespace-nowrap bg-transparent p-0 text-sm text-[#2f3440] md:text-[15px]',
-                    isToolsMenuOpen ? 'text-[#1f232d]' : ''
+                    'cursor-pointer whitespace-nowrap rounded px-1.5 py-1 text-sm font-medium text-[#324562] transition hover:bg-[#eaf0fc] hover:text-[#1f2f4e] md:text-[15px]',
+                    isToolsMenuOpen ? 'bg-[#e6edff] text-[#1f2f52]' : ''
                   ].join(' ')}
                   type="button"
                   onClick={() => {
@@ -462,12 +572,12 @@ export function TopMenu({
                   {item}
                 </button>
                 {isToolsMenuOpen && (
-                  <div className="absolute top-7 left-0 z-40 min-w-[186px] border border-[#d2d7de] bg-[#f4f4f5] shadow-[0_10px_24px_rgba(25,32,45,0.12)]">
+                  <div className="absolute top-9 left-0 z-40 min-w-[196px] overflow-hidden rounded-lg border border-[#ccd6e8] bg-[#f8faff] shadow-[0_16px_28px_rgba(26,42,71,0.16)]">
                     <button
                       type="button"
                       className={[
-                        'flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]',
-                        isSpellCheckEnabled ? 'bg-[#eceeef]' : 'bg-transparent'
+                        'flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]',
+                        isSpellCheckEnabled ? 'bg-[#e5ecfa]' : 'bg-transparent'
                       ].join(' ')}
                       onClick={() => {
                         onToggleSpellCheck()
@@ -479,6 +589,19 @@ export function TopMenu({
                       </span>
                       <span>Spell check</span>
                     </button>
+                    <button
+                      type="button"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]"
+                      onClick={() => {
+                        onOpenCommandPalette()
+                        closeAllMenus()
+                      }}
+                    >
+                      <span className="inline-flex w-5 items-center justify-center text-[16px]">
+                        <FiCommand />
+                      </span>
+                      <span>Command Palette</span>
+                    </button>
                   </div>
                 )}
               </div>
@@ -486,8 +609,8 @@ export function TopMenu({
               <div ref={insertMenuRef}>
                 <button
                   className={[
-                    'cursor-pointer whitespace-nowrap bg-transparent p-0 text-sm text-[#2f3440] md:text-[15px]',
-                    isInsertMenuOpen ? 'text-[#1f232d]' : ''
+                    'cursor-pointer whitespace-nowrap rounded px-1.5 py-1 text-sm font-medium text-[#324562] transition hover:bg-[#eaf0fc] hover:text-[#1f2f4e] md:text-[15px]',
+                    isInsertMenuOpen ? 'bg-[#e6edff] text-[#1f2f52]' : ''
                   ].join(' ')}
                   type="button"
                   onClick={() => {
@@ -503,10 +626,10 @@ export function TopMenu({
                   {item}
                 </button>
                 {isInsertMenuOpen && (
-                  <div className="absolute top-7 left-0 z-40 min-w-[186px] border border-[#d2d7de] bg-[#f4f4f5] shadow-[0_10px_24px_rgba(25,32,45,0.12)]">
+                  <div className="absolute top-9 left-0 z-40 min-w-[196px] overflow-hidden rounded-lg border border-[#ccd6e8] bg-[#f8faff] shadow-[0_16px_28px_rgba(26,42,71,0.16)]">
                     <button
                       type="button"
-                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]"
                       onClick={() => {
                         onInsertDateTime()
                         setIsInsertMenuOpen(false)
@@ -519,7 +642,7 @@ export function TopMenu({
                     </button>
                     <button
                       type="button"
-                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]"
                       onClick={() => {
                         onOpenSpecialCharacters()
                         setIsInsertMenuOpen(false)
@@ -532,7 +655,7 @@ export function TopMenu({
                     </button>
                     <button
                       type="button"
-                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]"
                       onClick={() => {
                         onOpenEmojis()
                         setIsInsertMenuOpen(false)
@@ -550,8 +673,8 @@ export function TopMenu({
               <div ref={formatMenuRef}>
                 <button
                   className={[
-                    'cursor-pointer whitespace-nowrap bg-transparent p-0 text-sm text-[#2f3440] md:text-[15px]',
-                    isFormatMenuOpen ? 'text-[#1f232d]' : ''
+                    'cursor-pointer whitespace-nowrap rounded px-1.5 py-1 text-sm font-medium text-[#324562] transition hover:bg-[#eaf0fc] hover:text-[#1f2f4e] md:text-[15px]',
+                    isFormatMenuOpen ? 'bg-[#e6edff] text-[#1f2f52]' : ''
                   ].join(' ')}
                   type="button"
                   onClick={() => {
@@ -567,12 +690,12 @@ export function TopMenu({
                   {item}
                 </button>
                 {isFormatMenuOpen && (
-                  <div className="absolute top-7 left-0 z-40 min-w-[186px] border border-[#d2d7de] bg-[#f4f4f5] shadow-[0_10px_24px_rgba(25,32,45,0.12)]">
+                  <div className="absolute top-9 left-0 z-40 min-w-[196px] overflow-hidden rounded-lg border border-[#ccd6e8] bg-[#f8faff] shadow-[0_16px_28px_rgba(26,42,71,0.16)]">
                     <button
                       type="button"
                       className={[
-                        'flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]',
-                        isWordWrapEnabled ? 'bg-[#eceeef]' : 'bg-transparent'
+                        'flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]',
+                        isWordWrapEnabled ? 'bg-[#e5ecfa]' : 'bg-transparent'
                       ].join(' ')}
                       onClick={() => {
                         onToggleWordWrap()
@@ -586,7 +709,7 @@ export function TopMenu({
                     </button>
                     <button
                       type="button"
-                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]"
                       onClick={() => {
                         onOpenFontSettings()
                         setIsFormatMenuOpen(false)
@@ -604,8 +727,8 @@ export function TopMenu({
               <div ref={helpMenuRef}>
                 <button
                   className={[
-                    'cursor-pointer whitespace-nowrap bg-transparent p-0 text-sm text-[#2f3440] md:text-[15px]',
-                    isHelpMenuOpen ? 'text-[#1f232d]' : ''
+                    'cursor-pointer whitespace-nowrap rounded px-1.5 py-1 text-sm font-medium text-[#324562] transition hover:bg-[#eaf0fc] hover:text-[#1f2f4e] md:text-[15px]',
+                    isHelpMenuOpen ? 'bg-[#e6edff] text-[#1f2f52]' : ''
                   ].join(' ')}
                   type="button"
                   onClick={() => {
@@ -621,10 +744,10 @@ export function TopMenu({
                   {item}
                 </button>
                 {isHelpMenuOpen && (
-                  <div className="absolute top-7 left-0 z-40 min-w-[186px] border border-[#d2d7de] bg-[#f4f4f5] shadow-[0_10px_24px_rgba(25,32,45,0.12)]">
+                  <div className="absolute top-9 left-0 z-40 min-w-[196px] overflow-hidden rounded-lg border border-[#ccd6e8] bg-[#f8faff] shadow-[0_16px_28px_rgba(26,42,71,0.16)]">
                     <button
                       type="button"
-                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]"
                       onClick={() => {
                         onHelpShortcuts()
                         setIsHelpMenuOpen(false)
@@ -637,7 +760,7 @@ export function TopMenu({
                     </button>
                     <button
                       type="button"
-                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]"
                       onClick={() => {
                         onHelpPrivacy()
                         setIsHelpMenuOpen(false)
@@ -650,7 +773,7 @@ export function TopMenu({
                     </button>
                     <button
                       type="button"
-                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[15px] text-[#2f3642] hover:bg-[#eceeef]"
+                      className="flex h-10 w-full items-center gap-2 px-4 text-left text-[14px] text-[#2f425f] transition hover:bg-[#edf2fd]"
                       onClick={() => {
                         onHelpAbout()
                         setIsHelpMenuOpen(false)
@@ -666,7 +789,7 @@ export function TopMenu({
               </div>
             ) : (
               <button
-                className="cursor-default whitespace-nowrap bg-transparent p-0 text-sm text-[#2f3440] md:text-[15px]"
+                className="cursor-default whitespace-nowrap rounded px-1.5 py-1 text-sm font-medium text-[#5d6f8f] md:text-[15px]"
                 type="button"
               >
                 {item}
@@ -678,7 +801,7 @@ export function TopMenu({
 
       <IconButton
         ariaLabel={isExpandedView ? 'Exit full screen' : 'Enter full screen'}
-        className="cursor-pointer bg-transparent p-1 text-lg text-[#1f232d] md:text-[22px]"
+        className="cursor-pointer rounded p-1 text-lg text-[#304a72] transition hover:bg-[#eaf0fd] md:text-[22px]"
         onClick={onToggleExpandedView}
       >
         {isExpandedView ? <FiMinimize2 /> : <FiMaximize2 />}

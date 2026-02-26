@@ -1,14 +1,18 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useReactToPrint } from 'react-to-print'
 import type {
+  AppTheme,
   EditorFontSettings,
   NoteSummary,
+  NoteVersionRecord,
   SidebarSortMode,
   SidebarViewMode
 } from '../../types/ui'
 import { AboutModal } from '../common/AboutModal'
+import { CommandPaletteModal, type CommandPaletteAction } from '../common/CommandPaletteModal'
 import { ConfirmModal } from '../common/ConfirmModal'
 import { SaveAsModal } from '../common/SaveAsModal'
+import { VersionHistoryModal } from '../common/VersionHistoryModal'
 import { EditorPane } from '../editor/EditorPane'
 import { AppTopBar } from './AppTopBar'
 import { NotesSidebar } from '../sidebar/NotesSidebar'
@@ -21,19 +25,36 @@ interface DesktopNotesLayoutProps {
 interface NotesApi {
   list: () => Promise<NoteSummary[]>
   create: () => Promise<NoteSummary>
-  update: (payload: { id: string; title: string; content: string }) => Promise<NoteSummary | null>
+  update: (payload: {
+    id: string
+    title: string
+    content: string
+    folder: string
+    tags: string[]
+    isPinned: boolean
+    isDeleted: boolean
+    deletedAt: number | null
+    versions: NoteVersionRecord[]
+  }) => Promise<NoteSummary | null>
   delete: (noteId: string) => Promise<boolean>
   clear: () => Promise<number>
   backup: () => Promise<{ path: string; count: number }>
 }
 
+type SaveState = 'saving' | 'saved' | 'error'
+
 const browserNotesStorageKey = 'online-notes:web-notes'
 const sidebarViewModeStorageKey = 'online-notes:sidebar-view-mode'
 const sidebarSortModeStorageKey = 'online-notes:sidebar-sort-mode'
-const statusBarVisibleStorageKey = 'online-notes:status-bar-visible'
+const statusBarVisibleStorageKey = 'online-notes:status-bar-visible:v2'
 const spellCheckEnabledStorageKey = 'online-notes:spell-check-enabled'
 const wordWrapEnabledStorageKey = 'online-notes:word-wrap-enabled'
 const editorFontSettingsStorageKey = 'online-notes:editor-font-settings'
+const selectedFolderStorageKey = 'online-notes:selected-folder-filter'
+const selectedTagsStorageKey = 'online-notes:selected-tag-filters'
+const trashViewStorageKey = 'online-notes:is-trash-view'
+const appThemeStorageKey = 'online-notes:theme'
+const markdownPreviewStorageKey = 'online-notes:markdown-preview-enabled'
 const productionWebAppBaseUrl = 'https://onlinenotepad.org'
 const privacyPolicyPath = '/privacy'
 const shortcutsPath = '/keyboard-shortcuts'
@@ -83,6 +104,10 @@ function ensureTxtExtension(fileName: string): string {
   return fileName.toLowerCase().endsWith('.txt') ? fileName : `${fileName}.txt`
 }
 
+function ensureMdExtension(fileName: string): string {
+  return fileName.toLowerCase().endsWith('.md') ? fileName : `${fileName}.md`
+}
+
 function formatPrintTimestamp(date: Date): string {
   return date.toLocaleString('en-US', {
     month: 'numeric',
@@ -102,35 +127,34 @@ function buildUrlFromBase(path: string, baseUrl: string): string {
   }
 }
 
-function loadBrowserNotes(): NoteSummary[] {
-  try {
-    const rawValue = window.localStorage.getItem(browserNotesStorageKey)
-    if (!rawValue) return []
-    const parsedValue = JSON.parse(rawValue) as Array<Partial<NoteSummary>>
-    return normalizeNotes(parsedValue)
-  } catch {
-    return []
-  }
-}
-
-function saveBrowserNotes(notes: NoteSummary[]): void {
-  try {
-    window.localStorage.setItem(browserNotesStorageKey, JSON.stringify(notes))
-  } catch {
-    // Ignore localStorage failures in restricted contexts.
-  }
-}
-
-function getNotesApi(): Partial<NotesApi> | null {
-  const desktopApi = (window as Window & { api?: { notes?: Partial<NotesApi> } }).api?.notes
-  return desktopApi ?? null
-}
-
 function normalizeTimestamp(rawValue: unknown, fallbackValue: number): number {
   if (typeof rawValue !== 'number' || Number.isNaN(rawValue)) return fallbackValue
   if (rawValue <= 0) return fallbackValue
   if (rawValue < 1_000_000_000_000) return Math.trunc(rawValue * 1000)
   return Math.trunc(rawValue)
+}
+
+function normalizeTagList(rawValue: unknown): string[] {
+  if (!Array.isArray(rawValue)) return []
+  const tags = rawValue
+    .filter((item): item is string => typeof item === 'string')
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0)
+
+  return [...new Set(tags)]
+}
+
+function normalizeVersions(rawValue: unknown): NoteVersionRecord[] {
+  if (!Array.isArray(rawValue)) return []
+  return rawValue
+    .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
+    .map((item) => ({
+      id: typeof item.id === 'string' ? item.id : generateNoteId(),
+      title: typeof item.title === 'string' ? item.title : 'Untitled Note',
+      content: typeof item.content === 'string' ? item.content : '',
+      savedAt: normalizeTimestamp(item.savedAt, Date.now())
+    }))
+    .slice(0, 50)
 }
 
 function formatRelativeTime(timestamp: number, now: number = Date.now()): string {
@@ -163,16 +187,50 @@ function normalizeNotes(notes: Array<Partial<NoteSummary>>): NoteSummary[] {
     const now = Date.now()
     const createdAt = normalizeTimestamp(note.createdAt, now)
     const updatedAt = normalizeTimestamp(note.updatedAt, createdAt)
+    const normalizedContent = typeof note.content === 'string' ? note.content : ''
+    const normalizedTitle = typeof note.title === 'string' ? note.title : 'Untitled Note'
+
     return {
       id: typeof note.id === 'string' ? note.id : generateNoteId(),
-      title: typeof note.title === 'string' ? note.title : 'Untitled Note',
-      excerpt: typeof note.excerpt === 'string' ? note.excerpt : 'Blank',
-      content: typeof note.content === 'string' ? note.content : '',
+      title: normalizedTitle,
+      excerpt: typeof note.excerpt === 'string' ? note.excerpt : buildExcerpt(normalizedContent),
+      content: normalizedContent,
       relativeTime: formatRelativeTime(updatedAt),
       createdAt,
-      updatedAt
+      updatedAt,
+      folder:
+        typeof note.folder === 'string' && note.folder.trim().length > 0 ? note.folder : 'General',
+      tags: normalizeTagList(note.tags),
+      isPinned: Boolean(note.isPinned),
+      isDeleted: Boolean(note.isDeleted),
+      deletedAt: typeof note.deletedAt === 'number' ? note.deletedAt : null,
+      versions: normalizeVersions(note.versions)
     }
   })
+}
+
+function loadBrowserNotes(): NoteSummary[] {
+  try {
+    const rawValue = window.localStorage.getItem(browserNotesStorageKey)
+    if (!rawValue) return []
+    const parsedValue = JSON.parse(rawValue) as Array<Partial<NoteSummary>>
+    return normalizeNotes(parsedValue)
+  } catch {
+    return []
+  }
+}
+
+function saveBrowserNotes(notes: NoteSummary[]): void {
+  try {
+    window.localStorage.setItem(browserNotesStorageKey, JSON.stringify(notes))
+  } catch {
+    // Ignore localStorage failures in restricted contexts.
+  }
+}
+
+function getNotesApi(): Partial<NotesApi> | null {
+  const desktopApi = (window as Window & { api?: { notes?: Partial<NotesApi> } }).api?.notes
+  return desktopApi ?? null
 }
 
 function loadSidebarViewMode(): SidebarViewMode {
@@ -203,9 +261,10 @@ function loadSidebarSortMode(): SidebarSortMode {
 function loadStatusBarVisibility(): boolean {
   try {
     const rawValue = window.localStorage.getItem(statusBarVisibleStorageKey)
+    if (rawValue === null) return true
     return rawValue === 'true'
   } catch {
-    return false
+    return true
   }
 }
 
@@ -265,33 +324,127 @@ function loadEditorFontSettings(): EditorFontSettings {
   }
 }
 
-function downloadBrowserBackup(notes: NoteSummary[]): string {
-  const backupName = `notes-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.json`
-  const backupBlob = new Blob(
-    [
-      JSON.stringify(
-        {
-          createdAt: new Date().toISOString(),
-          count: notes.length,
-          notes
-        },
-        null,
-        2
-      )
-    ],
-    { type: 'application/json' }
-  )
+function loadSelectedFolder(): string {
+  try {
+    return window.localStorage.getItem(selectedFolderStorageKey) || 'all'
+  } catch {
+    return 'all'
+  }
+}
 
-  const downloadUrl = URL.createObjectURL(backupBlob)
+function loadSelectedTags(): string[] {
+  try {
+    const rawValue = window.localStorage.getItem(selectedTagsStorageKey)
+    if (!rawValue) return []
+    return normalizeTagList(JSON.parse(rawValue))
+  } catch {
+    return []
+  }
+}
+
+function loadTrashView(): boolean {
+  try {
+    return window.localStorage.getItem(trashViewStorageKey) === 'true'
+  } catch {
+    return false
+  }
+}
+
+function loadAppTheme(): AppTheme {
+  try {
+    const rawValue = window.localStorage.getItem(appThemeStorageKey)
+    if (rawValue === 'dark' || rawValue === 'sepia') return rawValue
+    return 'light'
+  } catch {
+    return 'light'
+  }
+}
+
+function loadMarkdownPreviewEnabled(): boolean {
+  try {
+    return window.localStorage.getItem(markdownPreviewStorageKey) === 'true'
+  } catch {
+    return false
+  }
+}
+
+function downloadNoteFile(fileName: string, content: string, mimeType: string): void {
+  const blob = new Blob([content], { type: mimeType })
+  const downloadUrl = URL.createObjectURL(blob)
   const anchorElement = document.createElement('a')
   anchorElement.href = downloadUrl
-  anchorElement.download = backupName
+  anchorElement.download = fileName
   document.body.appendChild(anchorElement)
   anchorElement.click()
   anchorElement.remove()
   URL.revokeObjectURL(downloadUrl)
+}
 
+function createVersionSnapshot(note: NoteSummary, savedAt: number): NoteVersionRecord {
+  return {
+    id: generateNoteId(),
+    title: note.title.trim() || 'Untitled Note',
+    content: note.content,
+    savedAt
+  }
+}
+
+function attachVersionSnapshot(note: NoteSummary, savedAt: number): NoteSummary {
+  const latestVersion = note.versions[0]
+  const nextSnapshot = createVersionSnapshot(note, savedAt)
+
+  if (
+    latestVersion &&
+    latestVersion.title === nextSnapshot.title &&
+    latestVersion.content === nextSnapshot.content
+  ) {
+    return {
+      ...note,
+      versions: note.versions.slice(0, 50)
+    }
+  }
+
+  return {
+    ...note,
+    versions: [nextSnapshot, ...note.versions].slice(0, 50)
+  }
+}
+
+function downloadPortableBackup(notes: NoteSummary[]): string {
+  const backupName = `notes-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.json`
+  downloadNoteFile(
+    backupName,
+    JSON.stringify(
+      {
+        createdAt: new Date().toISOString(),
+        count: notes.length,
+        notes
+      },
+      null,
+      2
+    ),
+    'application/json'
+  )
   return backupName
+}
+
+function parseBackupPayload(rawContent: string): NoteSummary[] {
+  const parsed = JSON.parse(rawContent) as unknown
+
+  if (Array.isArray(parsed)) {
+    return normalizeNotes(parsed as Array<Partial<NoteSummary>>)
+  }
+
+  if (typeof parsed === 'object' && parsed !== null && 'notes' in parsed) {
+    const payload = parsed as { notes?: Array<Partial<NoteSummary>> }
+    return normalizeNotes(payload.notes ?? [])
+  }
+
+  return []
+}
+
+function focusEditorWithCommand(command: string): void {
+  window.dispatchEvent(new CustomEvent('notepad:editor-command', { detail: command }))
 }
 
 export function DesktopNotesLayout({
@@ -310,48 +463,112 @@ export function DesktopNotesLayout({
   const [isWordWrapEnabled, setIsWordWrapEnabled] = useState(loadWordWrapEnabled)
   const [editorFontSettings, setEditorFontSettings] =
     useState<EditorFontSettings>(loadEditorFontSettings)
+  const [selectedFolder, setSelectedFolder] = useState(loadSelectedFolder)
+  const [selectedTags, setSelectedTags] = useState<string[]>(loadSelectedTags)
+  const [isTrashView, setIsTrashView] = useState(loadTrashView)
+  const [appTheme, setAppTheme] = useState<AppTheme>(loadAppTheme)
+  const [isMarkdownPreviewEnabled, setIsMarkdownPreviewEnabled] = useState(
+    loadMarkdownPreviewEnabled
+  )
   const [isFontSettingsOpen, setIsFontSettingsOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [isClearModalOpen, setIsClearModalOpen] = useState(false)
   const [isSaveAsModalOpen, setIsSaveAsModalOpen] = useState(false)
   const [isAboutModalOpen, setIsAboutModalOpen] = useState(false)
+  const [isVersionHistoryOpen, setIsVersionHistoryOpen] = useState(false)
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
+  const [commandPaletteSession, setCommandPaletteSession] = useState(0)
   const [saveAsFileName, setSaveAsFileName] = useState('')
   const [printTimestamp, setPrintTimestamp] = useState('')
   const [timeNow, setTimeNow] = useState(() => Date.now())
+  const [saveState, setSaveState] = useState<SaveState>('saved')
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null)
   const updateTimeoutIdRef = useRef<number | null>(null)
   const printContentRef = useRef<HTMLDivElement | null>(null)
-  const normalizedSearchQuery = searchQuery.trim().toLocaleLowerCase()
-  const filteredNotes =
-    normalizedSearchQuery === ''
-      ? notes
-      : notes.filter((note) => {
-          const normalizedTitle = note.title.toLocaleLowerCase()
-          const normalizedContent = note.content.toLocaleLowerCase()
-          return (
-            normalizedTitle.includes(normalizedSearchQuery) ||
-            normalizedContent.includes(normalizedSearchQuery)
-          )
-        })
-  const sortedFilteredNotes = [...filteredNotes].sort((firstNote, secondNote) => {
-    if (sidebarSortMode === 'alphabetical') {
-      const titleCompare = firstNote.title.localeCompare(secondNote.title, undefined, {
-        sensitivity: 'base'
+
+  const activeNote = notes.find((note) => note.id === activeNoteId) ?? null
+
+  const scopedNotes = useMemo(
+    () => notes.filter((note) => (isTrashView ? note.isDeleted : !note.isDeleted)),
+    [isTrashView, notes]
+  )
+
+  const availableFolders = useMemo(() => {
+    const folderCounts = new Map<string, number>()
+    notes
+      .filter((note) => !note.isDeleted)
+      .forEach((note) => {
+        const folder = note.folder || 'General'
+        folderCounts.set(folder, (folderCounts.get(folder) ?? 0) + 1)
       })
-      if (titleCompare !== 0) return titleCompare
+
+    if (!folderCounts.has('General')) folderCounts.set('General', 0)
+
+    return [...folderCounts.entries()]
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+  }, [notes])
+
+  const availableTags = useMemo(() => {
+    const tagCounts = new Map<string, number>()
+    notes
+      .filter((note) => !note.isDeleted)
+      .forEach((note) => {
+        note.tags.forEach((tag) => tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1))
+      })
+
+    return [...tagCounts.entries()]
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+  }, [notes])
+
+  const normalizedSearchQuery = searchQuery.trim().toLocaleLowerCase()
+
+  const filteredNotes = useMemo(() => {
+    return scopedNotes.filter((note) => {
+      if (!isTrashView && selectedFolder !== 'all' && note.folder !== selectedFolder) return false
+      if (!isTrashView && selectedTags.length > 0) {
+        const noteTagSet = new Set(note.tags)
+        if (!selectedTags.every((tag) => noteTagSet.has(tag))) return false
+      }
+
+      if (normalizedSearchQuery === '') return true
+      const haystack = [note.title, note.content, note.folder, note.tags.join(' ')].join(' ')
+      return haystack.toLocaleLowerCase().includes(normalizedSearchQuery)
+    })
+  }, [isTrashView, normalizedSearchQuery, scopedNotes, selectedFolder, selectedTags])
+
+  const sortedFilteredNotes = useMemo(() => {
+    return [...filteredNotes].sort((firstNote, secondNote) => {
+      if (!isTrashView && firstNote.isPinned !== secondNote.isPinned) {
+        return firstNote.isPinned ? -1 : 1
+      }
+
+      if (sidebarSortMode === 'alphabetical') {
+        const titleCompare = firstNote.title.localeCompare(secondNote.title, undefined, {
+          sensitivity: 'base'
+        })
+        if (titleCompare !== 0) return titleCompare
+        return secondNote.updatedAt - firstNote.updatedAt
+      }
+
+      if (sidebarSortMode === 'creation-date') {
+        return secondNote.createdAt - firstNote.createdAt
+      }
+
       return secondNote.updatedAt - firstNote.updatedAt
-    }
+    })
+  }, [filteredNotes, isTrashView, sidebarSortMode])
 
-    if (sidebarSortMode === 'creation-date') {
-      return secondNote.createdAt - firstNote.createdAt
-    }
+  const notesForSidebar = useMemo(
+    () =>
+      sortedFilteredNotes.map((note) => ({
+        ...note,
+        relativeTime: formatRelativeTime(note.updatedAt, timeNow)
+      })),
+    [sortedFilteredNotes, timeNow]
+  )
 
-    return secondNote.updatedAt - firstNote.updatedAt
-  })
-  const notesForSidebar = sortedFilteredNotes.map((note) => ({
-    ...note,
-    relativeTime: formatRelativeTime(note.updatedAt, timeNow)
-  }))
-  const activeNote = notes.find((note) => note.id === activeNoteId) ?? notes[0] ?? null
   const activeNoteCharacterCount = Array.from(activeNote?.content ?? '').length
   const printTitle = activeNote?.title?.trim() || 'Untitled Note'
   const printContent = activeNote?.content ?? ''
@@ -371,13 +588,18 @@ export function DesktopNotesLayout({
     const loadNotes = async (): Promise<void> => {
       try {
         const notesApi = getNotesApi()
-        const storedNotes = normalizeNotes(
+        const loadedNotes =
           notesApi && typeof notesApi.list === 'function'
             ? await notesApi.list()
             : loadBrowserNotes()
-        )
-        setNotes(storedNotes)
-        setActiveNoteId(storedNotes[0]?.id ?? '')
+        const normalizedNotes = normalizeNotes(loadedNotes)
+        setNotes(normalizedNotes)
+        const firstActiveNote =
+          normalizedNotes.find((note) => !note.isDeleted) ??
+          normalizedNotes.find((note) => note.isDeleted) ??
+          null
+        setActiveNoteId(firstActiveNote?.id ?? '')
+        setLastSavedAt(Date.now())
       } catch (error) {
         console.error('Failed to load notes', error)
       }
@@ -387,38 +609,19 @@ export function DesktopNotesLayout({
   }, [])
 
   useEffect(() => {
-    if (activeNote) {
-      if (activeNoteId !== activeNote.id) setActiveNoteId(activeNote.id)
+    const firstScopedNote = scopedNotes[0]
+    if (!firstScopedNote) {
+      if (activeNoteId) setActiveNoteId('')
       return
     }
 
-    if (activeNoteId) setActiveNoteId('')
-  }, [activeNote, activeNoteId])
+    const hasActiveInScope = scopedNotes.some((note) => note.id === activeNoteId)
+    if (!hasActiveInScope) setActiveNoteId(firstScopedNote.id)
+  }, [activeNoteId, scopedNotes])
 
   useEffect(() => {
-    const syncFullScreenState = async (): Promise<void> => {
-      try {
-        const isFullScreen = await window.electron.ipcRenderer.invoke('window:is-full-screen')
-        setIsExpandedView(Boolean(isFullScreen))
-      } catch {
-        // Keep UI-only fallback state if Electron IPC is unavailable.
-      }
-    }
-
-    void syncFullScreenState()
-  }, [])
-
-  useEffect(() => {
-    const syncSpellCheckState = async (): Promise<void> => {
-      try {
-        const isEnabled = await window.electron.ipcRenderer.invoke('window:is-spell-check-enabled')
-        setIsSpellCheckEnabled(Boolean(isEnabled))
-      } catch {
-        // Keep UI fallback state if Electron IPC is unavailable.
-      }
-    }
-
-    void syncSpellCheckState()
+    const intervalId = window.setInterval(() => setTimeNow(Date.now()), 60 * 1000)
+    return () => window.clearInterval(intervalId)
   }, [])
 
   useEffect(() => {
@@ -428,41 +631,36 @@ export function DesktopNotesLayout({
   }, [])
 
   useEffect(() => {
-    const intervalId = window.setInterval(() => setTimeNow(Date.now()), 60 * 1000)
-    return () => window.clearInterval(intervalId)
-  }, [])
-
-  useEffect(() => {
     try {
       window.localStorage.setItem(sidebarViewModeStorageKey, sidebarViewMode)
-    } catch {
-      // Ignore localStorage failures in restricted contexts.
-    }
-  }, [sidebarViewMode])
-
-  useEffect(() => {
-    try {
       window.localStorage.setItem(sidebarSortModeStorageKey, sidebarSortMode)
-    } catch {
-      // Ignore localStorage failures in restricted contexts.
-    }
-  }, [sidebarSortMode])
-
-  useEffect(() => {
-    try {
       window.localStorage.setItem(statusBarVisibleStorageKey, String(isStatusBarVisible))
+      window.localStorage.setItem(spellCheckEnabledStorageKey, String(isSpellCheckEnabled))
+      window.localStorage.setItem(wordWrapEnabledStorageKey, String(isWordWrapEnabled))
+      window.localStorage.setItem(editorFontSettingsStorageKey, JSON.stringify(editorFontSettings))
+      window.localStorage.setItem(selectedFolderStorageKey, selectedFolder)
+      window.localStorage.setItem(selectedTagsStorageKey, JSON.stringify(selectedTags))
+      window.localStorage.setItem(trashViewStorageKey, String(isTrashView))
+      window.localStorage.setItem(appThemeStorageKey, appTheme)
+      window.localStorage.setItem(markdownPreviewStorageKey, String(isMarkdownPreviewEnabled))
     } catch {
       // Ignore localStorage failures in restricted contexts.
     }
-  }, [isStatusBarVisible])
+  }, [
+    appTheme,
+    editorFontSettings,
+    isMarkdownPreviewEnabled,
+    isSpellCheckEnabled,
+    isStatusBarVisible,
+    isTrashView,
+    isWordWrapEnabled,
+    selectedFolder,
+    selectedTags,
+    sidebarSortMode,
+    sidebarViewMode
+  ])
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem(spellCheckEnabledStorageKey, String(isSpellCheckEnabled))
-    } catch {
-      // Ignore localStorage failures in restricted contexts.
-    }
-
     const syncSpellCheck = async (): Promise<void> => {
       try {
         await window.electron.ipcRenderer.invoke(
@@ -478,84 +676,224 @@ export function DesktopNotesLayout({
   }, [isSpellCheckEnabled])
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem(wordWrapEnabledStorageKey, String(isWordWrapEnabled))
-    } catch {
-      // Ignore localStorage failures in restricted contexts.
+    const syncFullScreenState = async (): Promise<void> => {
+      try {
+        const isFullScreen = await window.electron.ipcRenderer.invoke('window:is-full-screen')
+        setIsExpandedView(Boolean(isFullScreen))
+      } catch {
+        // Keep fallback state if IPC unavailable.
+      }
     }
-  }, [isWordWrapEnabled])
 
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(editorFontSettingsStorageKey, JSON.stringify(editorFontSettings))
-    } catch {
-      // Ignore localStorage failures in restricted contexts.
+    void syncFullScreenState()
+  }, [])
+
+  const persistSingleNote = async (note: NoteSummary): Promise<NoteSummary | null> => {
+    const notesApi = getNotesApi()
+    const noteWithVersion = attachVersionSnapshot(note, Date.now())
+
+    if (notesApi && typeof notesApi.update === 'function') {
+      const updatedNote = await notesApi.update({
+        id: noteWithVersion.id,
+        title: noteWithVersion.title,
+        content: noteWithVersion.content,
+        folder: noteWithVersion.folder,
+        tags: noteWithVersion.tags,
+        isPinned: noteWithVersion.isPinned,
+        isDeleted: noteWithVersion.isDeleted,
+        deletedAt: noteWithVersion.deletedAt,
+        versions: noteWithVersion.versions
+      })
+
+      if (!updatedNote) return null
+      return normalizeNotes([updatedNote])[0] ?? null
     }
-  }, [editorFontSettings])
 
-  const queuePersistNote = (note: NoteSummary): void => {
+    return noteWithVersion
+  }
+
+  const queuePersistNote = (note: NoteSummary, delayMs: number = 250): void => {
     clearPendingUpdate()
+    setSaveState('saving')
+
     updateTimeoutIdRef.current = window.setTimeout(() => {
       const persistNote = async (): Promise<void> => {
         try {
-          const notesApi = getNotesApi()
-          const updatedNote =
-            notesApi && typeof notesApi.update === 'function'
-              ? await notesApi.update({
-                  id: note.id,
-                  title: note.title,
-                  content: note.content
-                })
-              : note
+          const persistedNote = await persistSingleNote(note)
+          if (!persistedNote) {
+            setSaveState('error')
+            return
+          }
 
-          if (!updatedNote) return
           setNotes((prev) => {
             const updatedNotes = prev.map((item) =>
-              item.id === updatedNote.id ? updatedNote : item
+              item.id === persistedNote.id ? persistedNote : item
             )
+            const notesApi = getNotesApi()
             if (!notesApi) saveBrowserNotes(updatedNotes)
             return updatedNotes
           })
+          setSaveState('saved')
+          setLastSavedAt(Date.now())
         } catch (error) {
           console.error('Failed to update note', error)
+          setSaveState('error')
         } finally {
           updateTimeoutIdRef.current = null
         }
       }
 
       void persistNote()
-    }, 250)
+    }, delayMs)
+  }
+
+  const updateNoteById = (
+    noteId: string,
+    updater: (note: NoteSummary) => NoteSummary,
+    options: { persist?: boolean; delayMs?: number } = {}
+  ): void => {
+    let updatedNote: NoteSummary | null = null
+
+    setNotes((prev) => {
+      const next = prev.map((note) => {
+        if (note.id !== noteId) return note
+        const nextNote = updater(note)
+        updatedNote = nextNote
+        return nextNote
+      })
+
+      const notesApi = getNotesApi()
+      if (!notesApi) saveBrowserNotes(next)
+      return next
+    })
+
+    if (updatedNote && options.persist !== false) {
+      queuePersistNote(updatedNote, options.delayMs)
+    }
   }
 
   const handleChangeActiveNoteTitle = (title: string): void => {
     if (!activeNote) return
-
     const now = Date.now()
-    const nextNote: NoteSummary = {
-      ...activeNote,
+
+    updateNoteById(activeNote.id, (note) => ({
+      ...note,
       title,
       relativeTime: 'just now',
       updatedAt: now
-    }
-
-    setNotes((prev) => prev.map((note) => (note.id === activeNote.id ? nextNote : note)))
-    queuePersistNote(nextNote)
+    }))
   }
 
   const handleChangeActiveNoteContent = (content: string): void => {
     if (!activeNote) return
-
     const now = Date.now()
-    const nextNote: NoteSummary = {
-      ...activeNote,
+
+    updateNoteById(activeNote.id, (note) => ({
+      ...note,
       content,
       excerpt: buildExcerpt(content),
       relativeTime: 'just now',
       updatedAt: now
+    }))
+  }
+
+  const handleChangeActiveNoteFolder = (folder: string): void => {
+    if (!activeNote || activeNote.isDeleted) return
+    const normalizedFolder = folder.trim() || 'General'
+    const now = Date.now()
+
+    updateNoteById(activeNote.id, (note) => ({
+      ...note,
+      folder: normalizedFolder,
+      relativeTime: 'just now',
+      updatedAt: now
+    }))
+  }
+
+  const handleChangeActiveNoteTags = (tags: string[]): void => {
+    if (!activeNote || activeNote.isDeleted) return
+    const now = Date.now()
+
+    updateNoteById(activeNote.id, (note) => ({
+      ...note,
+      tags,
+      relativeTime: 'just now',
+      updatedAt: now
+    }))
+  }
+
+  const handleTogglePinNote = (): void => {
+    if (!activeNote || activeNote.isDeleted) return
+    const now = Date.now()
+
+    updateNoteById(
+      activeNote.id,
+      (note) => ({
+        ...note,
+        isPinned: !note.isPinned,
+        relativeTime: 'just now',
+        updatedAt: now
+      }),
+      { delayMs: 0 }
+    )
+  }
+
+  const moveNoteToTrash = (noteId: string): void => {
+    const now = Date.now()
+
+    updateNoteById(
+      noteId,
+      (note) => ({
+        ...note,
+        isDeleted: true,
+        deletedAt: now,
+        isPinned: false,
+        relativeTime: 'just now',
+        updatedAt: now
+      }),
+      { delayMs: 0 }
+    )
+  }
+
+  const restoreNoteFromTrash = (noteId: string): void => {
+    const now = Date.now()
+
+    updateNoteById(
+      noteId,
+      (note) => ({
+        ...note,
+        isDeleted: false,
+        deletedAt: null,
+        relativeTime: 'just now',
+        updatedAt: now
+      }),
+      { delayMs: 0 }
+    )
+  }
+
+  const permanentlyDeleteNote = (noteId: string): void => {
+    const deleteNote = async (): Promise<void> => {
+      try {
+        clearPendingUpdate()
+        const notesApi = getNotesApi()
+        const isDeleted =
+          notesApi && typeof notesApi.delete === 'function' ? await notesApi.delete(noteId) : true
+
+        if (!isDeleted) return
+
+        setNotes((prev) => {
+          const remainingNotes = prev.filter((note) => note.id !== noteId)
+          if (!notesApi) saveBrowserNotes(remainingNotes)
+          return remainingNotes
+        })
+        setSaveState('saved')
+      } catch (error) {
+        console.error('Failed to delete note', error)
+        setSaveState('error')
+      }
     }
 
-    setNotes((prev) => prev.map((note) => (note.id === activeNote.id ? nextNote : note)))
-    queuePersistNote(nextNote)
+    void deleteNote()
   }
 
   const handleToggleExpandedView = (): void => {
@@ -564,7 +902,6 @@ export function DesktopNotesLayout({
         const isFullScreen = await window.electron.ipcRenderer.invoke('window:toggle-full-screen')
         setIsExpandedView(Boolean(isFullScreen))
       } catch {
-        // Fallback for non-Electron environments.
         setIsExpandedView((prev) => !prev)
       }
     }
@@ -579,33 +916,19 @@ export function DesktopNotesLayout({
 
   const handleConfirmDeleteActiveNote = (): void => {
     if (!activeNote) return
-    const deletingNoteId = activeNote.id
 
-    const deleteNote = async (): Promise<void> => {
-      try {
-        clearPendingUpdate()
-        const notesApi = getNotesApi()
-        const isDeleted =
-          notesApi && typeof notesApi.delete === 'function'
-            ? await notesApi.delete(deletingNoteId)
-            : true
-        if (!isDeleted) return
-        setNotes((prev) => {
-          const remainingNotes = prev.filter((note) => note.id !== deletingNoteId)
-          if (!notesApi) saveBrowserNotes(remainingNotes)
-          return remainingNotes
-        })
-      } catch (error) {
-        console.error('Failed to delete note', error)
-      } finally {
-        setIsDeleteModalOpen(false)
-      }
+    if (activeNote.isDeleted) {
+      permanentlyDeleteNote(activeNote.id)
+    } else {
+      moveNoteToTrash(activeNote.id)
     }
 
-    void deleteNote()
+    setIsDeleteModalOpen(false)
   }
 
   const handleCreateNote = (): void => {
+    if (isTrashView) return
+
     const createNote = async (): Promise<void> => {
       try {
         const notesApi = getNotesApi()
@@ -620,8 +943,16 @@ export function DesktopNotesLayout({
                 content: '',
                 relativeTime: 'just now',
                 createdAt: now,
-                updatedAt: now
+                updatedAt: now,
+                folder: selectedFolder === 'all' ? 'General' : selectedFolder,
+                tags: [],
+                isPinned: false,
+                isDeleted: false,
+                deletedAt: null,
+                versions: []
               }
+
+        if (!createdNote) return
 
         setNotes((prev) => {
           const nextNotes = [createdNote, ...prev]
@@ -647,7 +978,7 @@ export function DesktopNotesLayout({
 
     clearPendingUpdate()
 
-    if (activeNote) {
+    if (activeNote && !activeNote.isDeleted) {
       const nextNote: NoteSummary = {
         ...activeNote,
         title: normalizedTitle,
@@ -673,7 +1004,13 @@ export function DesktopNotesLayout({
             content: '',
             relativeTime: 'just now',
             createdAt: now,
-            updatedAt: now
+            updatedAt: now,
+            folder: selectedFolder === 'all' ? 'General' : selectedFolder,
+            tags: [],
+            isPinned: false,
+            isDeleted: false,
+            deletedAt: null,
+            versions: []
           }
 
     const nextNote: NoteSummary = {
@@ -692,19 +1029,6 @@ export function DesktopNotesLayout({
     })
     setActiveNoteId(nextNote.id)
     queuePersistNote(nextNote)
-  }
-
-  const downloadNoteAsText = (fileName: string, content: string): void => {
-    const fileContent = typeof content === 'string' ? content : ''
-    const textBlob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' })
-    const downloadUrl = URL.createObjectURL(textBlob)
-    const anchorElement = document.createElement('a')
-    anchorElement.href = downloadUrl
-    anchorElement.download = fileName
-    document.body.appendChild(anchorElement)
-    anchorElement.click()
-    anchorElement.remove()
-    URL.revokeObjectURL(downloadUrl)
   }
 
   const handleFileNew = (): void => {
@@ -742,7 +1066,25 @@ export function DesktopNotesLayout({
     const baseFileName = ensureTxtExtension(
       sanitizeDownloadFileName(activeNote.title || 'Untitled Note')
     )
-    downloadNoteAsText(baseFileName, activeNote.content)
+    downloadNoteFile(baseFileName, activeNote.content, 'text/plain;charset=utf-8')
+  }
+
+  const handleFileExportMarkdown = (): void => {
+    if (!activeNote) return
+
+    const fileName = ensureMdExtension(
+      sanitizeDownloadFileName(activeNote.title || 'Untitled Note')
+    )
+    downloadNoteFile(fileName, activeNote.content, 'text/markdown;charset=utf-8')
+  }
+
+  const handleFileExportPdf = (): void => {
+    if (!activeNote) return
+
+    setPrintTimestamp(formatPrintTimestamp(new Date()))
+    window.requestAnimationFrame(() => {
+      reactToPrint()
+    })
   }
 
   const handleFileSaveAs = (): void => {
@@ -766,7 +1108,7 @@ export function DesktopNotesLayout({
     if (!normalizedName) return
 
     const targetFileName = ensureTxtExtension(normalizedName)
-    downloadNoteAsText(targetFileName, activeNote.content)
+    downloadNoteFile(targetFileName, activeNote.content, 'text/plain;charset=utf-8')
     setIsSaveAsModalOpen(false)
   }
 
@@ -841,32 +1183,87 @@ export function DesktopNotesLayout({
   }
 
   const handleBackupNotes = (): void => {
-    const backupNotes = async (): Promise<void> => {
-      try {
-        const notesApi = getNotesApi()
-        if (notesApi && typeof notesApi.backup === 'function') {
-          const backupResult = await notesApi.backup()
-          window.alert(
-            `Backup completed.\nSaved: ${backupResult.path}\nNotes: ${backupResult.count}`
-          )
-          return
-        }
+    const backupName = downloadPortableBackup(notes)
+    window.alert(`Backup exported as ${backupName}`)
+  }
 
-        const notesForBackup = normalizeNotes(
-          notesApi && typeof notesApi.list === 'function' ? await notesApi.list() : notes
-        )
-        const backupName = downloadBrowserBackup(notesForBackup)
-        window.alert(`Backup downloaded as ${backupName}`)
-      } catch (error) {
-        console.error('Failed to backup notes', error)
+  const handleImportBackupNotes = (): void => {
+    const fileInput = document.createElement('input')
+    fileInput.type = 'file'
+    fileInput.accept = '.json,application/json'
+
+    fileInput.onchange = () => {
+      const selectedFile = fileInput.files?.[0]
+      if (!selectedFile) return
+
+      const importBackup = async (): Promise<void> => {
+        try {
+          const rawContent = await selectedFile.text()
+          const importedNotes = parseBackupPayload(rawContent)
+          if (importedNotes.length === 0) {
+            window.alert('No valid notes found in backup file.')
+            return
+          }
+
+          const notesApi = getNotesApi()
+
+          if (
+            notesApi &&
+            typeof notesApi.clear === 'function' &&
+            typeof notesApi.create === 'function' &&
+            typeof notesApi.update === 'function'
+          ) {
+            await notesApi.clear()
+            const restored: NoteSummary[] = []
+
+            for (const importedNote of importedNotes) {
+              const createdNote = await notesApi.create()
+              const updated = await notesApi.update({
+                id: createdNote.id,
+                title: importedNote.title,
+                content: importedNote.content,
+                folder: importedNote.folder,
+                tags: importedNote.tags,
+                isPinned: importedNote.isPinned,
+                isDeleted: importedNote.isDeleted,
+                deletedAt: importedNote.deletedAt,
+                versions: importedNote.versions
+              })
+
+              if (updated) restored.push(normalizeNotes([updated])[0] as NoteSummary)
+            }
+
+            setNotes(restored)
+            const firstScopedNote = restored.find((note) =>
+              isTrashView ? note.isDeleted : !note.isDeleted
+            )
+            setActiveNoteId(firstScopedNote?.id ?? '')
+          } else {
+            setNotes(importedNotes)
+            saveBrowserNotes(importedNotes)
+            const firstScopedNote = importedNotes.find((note) =>
+              isTrashView ? note.isDeleted : !note.isDeleted
+            )
+            setActiveNoteId(firstScopedNote?.id ?? '')
+          }
+
+          setSaveState('saved')
+          setLastSavedAt(Date.now())
+          window.alert(`Imported ${importedNotes.length} notes from backup.`)
+        } catch (error) {
+          console.error('Failed to import backup', error)
+          window.alert('Backup import failed. Please use a valid JSON backup file.')
+        }
       }
+
+      void importBackup()
     }
 
-    void backupNotes()
+    fileInput.click()
   }
 
   const handleRequestClearNotes = (): void => {
-    if (notes.length === 0) return
+    if (scopedNotes.length === 0) return
     setIsClearModalOpen(true)
   }
 
@@ -874,22 +1271,65 @@ export function DesktopNotesLayout({
     const clearNotes = async (): Promise<void> => {
       try {
         clearPendingUpdate()
+        const targetNotes = notes.filter((note) => (isTrashView ? note.isDeleted : !note.isDeleted))
+        if (targetNotes.length === 0) return
+
         const notesApi = getNotesApi()
-        if (notesApi && typeof notesApi.clear === 'function') {
-          await notesApi.clear()
-        } else if (notesApi && typeof notesApi.delete === 'function') {
-          const deleteNote = notesApi.delete
-          const currentNotes =
-            notesApi && typeof notesApi.list === 'function' ? await notesApi.list() : notes
-          await Promise.all(currentNotes.map((note) => deleteNote(note.id)))
+
+        if (isTrashView) {
+          if (notesApi && typeof notesApi.delete === 'function') {
+            const deleteNote = notesApi.delete
+            await Promise.all(targetNotes.map((note) => deleteNote(note.id)))
+          }
+
+          setNotes((prev) => {
+            const remaining = prev.filter((note) => !note.isDeleted)
+            if (!notesApi) saveBrowserNotes(remaining)
+            return remaining
+          })
         } else {
-          saveBrowserNotes([])
+          const now = Date.now()
+          const movedToTrash = targetNotes.map((note) => ({
+            ...note,
+            isDeleted: true,
+            deletedAt: now,
+            isPinned: false,
+            updatedAt: now,
+            relativeTime: 'just now'
+          }))
+
+          setNotes((prev) => {
+            const movedMap = new Map(movedToTrash.map((note) => [note.id, note]))
+            const next = prev.map((note) => movedMap.get(note.id) ?? note)
+            if (!notesApi) saveBrowserNotes(next)
+            return next
+          })
+
+          if (notesApi && typeof notesApi.update === 'function') {
+            const updateNote = notesApi.update
+            await Promise.all(
+              movedToTrash.map((note) =>
+                updateNote({
+                  id: note.id,
+                  title: note.title,
+                  content: note.content,
+                  folder: note.folder,
+                  tags: note.tags,
+                  isPinned: note.isPinned,
+                  isDeleted: note.isDeleted,
+                  deletedAt: note.deletedAt,
+                  versions: note.versions
+                })
+              )
+            )
+          }
         }
 
-        setNotes([])
-        setActiveNoteId('')
+        setSaveState('saved')
+        setLastSavedAt(Date.now())
       } catch (error) {
         console.error('Failed to clear notes', error)
+        setSaveState('error')
       } finally {
         setIsClearModalOpen(false)
       }
@@ -898,8 +1338,137 @@ export function DesktopNotesLayout({
     void clearNotes()
   }
 
+  const handleRestoreVersion = (versionId: string): void => {
+    if (!activeNote) return
+
+    const targetVersion = activeNote.versions.find((version) => version.id === versionId)
+    if (!targetVersion) return
+
+    const now = Date.now()
+    const nextNote: NoteSummary = {
+      ...activeNote,
+      title: targetVersion.title,
+      content: targetVersion.content,
+      excerpt: buildExcerpt(targetVersion.content),
+      updatedAt: now,
+      relativeTime: 'just now'
+    }
+
+    setNotes((prev) => prev.map((note) => (note.id === nextNote.id ? nextNote : note)))
+    queuePersistNote(nextNote, 0)
+  }
+
+  const commandPaletteActions: CommandPaletteAction[] = [
+    {
+      id: 'new-note',
+      title: 'New note',
+      subtitle: 'Create a new blank note',
+      keywords: ['new', 'note', 'create'],
+      onSelect: handleCreateNote
+    },
+    {
+      id: 'open-file',
+      title: 'Open file',
+      subtitle: 'Import .txt or .md into active note',
+      keywords: ['open', 'file', 'import'],
+      onSelect: handleFileOpen
+    },
+    {
+      id: 'save-note',
+      title: 'Save as .txt',
+      subtitle: 'Export active note as text file',
+      keywords: ['save', 'txt', 'export'],
+      onSelect: handleFileSave
+    },
+    {
+      id: 'save-md',
+      title: 'Export markdown',
+      subtitle: 'Export active note as .md',
+      keywords: ['markdown', 'md', 'export'],
+      onSelect: handleFileExportMarkdown
+    },
+    {
+      id: 'print',
+      title: 'Print / Export PDF',
+      subtitle: 'Open print dialog with clean print theme',
+      keywords: ['print', 'pdf'],
+      onSelect: handleFilePrint
+    },
+    {
+      id: 'find-replace',
+      title: 'Find and replace',
+      subtitle: 'Open find & replace modal',
+      keywords: ['find', 'replace', 'search'],
+      onSelect: () => focusEditorWithCommand('open-find-replace')
+    },
+    {
+      id: 'toggle-word-wrap',
+      title: 'Toggle word wrap',
+      subtitle: 'Enable or disable wrapping',
+      keywords: ['wrap', 'line', 'format'],
+      onSelect: () => setIsWordWrapEnabled((prev) => !prev)
+    },
+    {
+      id: 'toggle-markdown-preview',
+      title: 'Toggle markdown preview',
+      subtitle: 'Switch split view for markdown preview',
+      keywords: ['preview', 'markdown', 'split'],
+      onSelect: () => setIsMarkdownPreviewEnabled((prev) => !prev)
+    },
+    {
+      id: 'theme-light',
+      title: 'Set theme: Light',
+      subtitle: 'Switch to light mode',
+      keywords: ['theme', 'light'],
+      onSelect: () => setAppTheme('light')
+    },
+    {
+      id: 'theme-sepia',
+      title: 'Set theme: Sepia',
+      subtitle: 'Switch to sepia mode',
+      keywords: ['theme', 'sepia'],
+      onSelect: () => setAppTheme('sepia')
+    },
+    {
+      id: 'theme-dark',
+      title: 'Set theme: Dark',
+      subtitle: 'Switch to dark mode',
+      keywords: ['theme', 'dark'],
+      onSelect: () => setAppTheme('dark')
+    },
+    {
+      id: 'help-shortcuts',
+      title: 'Open keyboard shortcuts',
+      subtitle: 'See available productivity shortcuts',
+      keywords: ['help', 'shortcut', 'keyboard'],
+      onSelect: handleOpenShortcutsPage
+    }
+  ]
+
+  useEffect(() => {
+    const handleGlobalCommandShortcut = (event: KeyboardEvent): void => {
+      const isModPressed = event.ctrlKey || event.metaKey
+      if (!isModPressed) return
+      if (event.key.toLocaleLowerCase() !== 'k') return
+
+      event.preventDefault()
+      setCommandPaletteSession((prev) => prev + 1)
+      setIsCommandPaletteOpen(true)
+    }
+
+    window.addEventListener('keydown', handleGlobalCommandShortcut)
+    return () => window.removeEventListener('keydown', handleGlobalCommandShortcut)
+  }, [])
+
+  const themeWrapperClass =
+    appTheme === 'dark'
+      ? 'bg-[radial-gradient(circle_at_top,#101a2d_0%,#0c1422_50%,#0a111e_100%)] text-[#dce6f7]'
+      : appTheme === 'sepia'
+        ? 'bg-[radial-gradient(circle_at_top,#f8eed7_0%,#f5e8cf_52%,#efe0c5_100%)] text-[#4f412d]'
+        : 'bg-[radial-gradient(circle_at_top,#f7faff_0%,#edf4ff_45%,#e6eefb_100%)] text-[#2f3340]'
+
   return (
-    <main className="flex h-screen w-full flex-col bg-[#f5f6f8] font-sans text-[#2f3340]">
+    <main className={`flex h-screen w-full flex-col font-sans ${themeWrapperClass}`}>
       {!isExpandedView && (
         <AppTopBar
           title={appTitle}
@@ -908,11 +1477,22 @@ export function DesktopNotesLayout({
         />
       )}
 
-      <div className="flex min-h-0 flex-1">
+      <div
+        className={[
+          'flex min-h-0 flex-1',
+          isExpandedView ? '' : 'gap-3 px-3 pt-3 pb-3 md:gap-4 md:px-4 md:pt-4 md:pb-4'
+        ].join(' ')}
+      >
         <div
           className={[
             'min-h-0 shrink-0 overflow-hidden transition-[width] duration-200 ease-out',
-            isSidebarOpen ? 'w-[280px] border-r border-[#d9dee5] xl:w-[332px]' : 'w-0 border-r-0'
+            isSidebarOpen
+              ? [
+                  'w-[300px] xl:w-[356px]',
+                  'rounded-2xl border border-[#ccd7ea] bg-[#f4f7fd]',
+                  'shadow-[0_10px_24px_rgba(32,49,82,0.08)]'
+                ].join(' ')
+              : 'w-0 border-0'
           ].join(' ')}
         >
           <NotesSidebar
@@ -924,15 +1504,55 @@ export function DesktopNotesLayout({
             onChangeViewMode={setSidebarViewMode}
             sortMode={sidebarSortMode}
             onChangeSortMode={setSidebarSortMode}
-            onBackup={handleBackupNotes}
+            onBackupExport={handleBackupNotes}
+            onBackupImport={handleImportBackupNotes}
             onClear={handleRequestClearNotes}
             searchQuery={searchQuery}
             onSearchQueryChange={setSearchQuery}
-            hasAnyNotes={notes.length > 0}
+            hasAnyNotes={scopedNotes.length > 0}
+            isTrashView={isTrashView}
+            onChangeTrashView={(value) => {
+              setIsTrashView(value)
+              setSelectedFolder('all')
+              setSelectedTags([])
+            }}
+            availableFolders={availableFolders}
+            selectedFolder={selectedFolder}
+            onSelectFolder={setSelectedFolder}
+            availableTags={availableTags}
+            selectedTags={selectedTags}
+            onToggleTag={(tag) => {
+              setSelectedTags((prev) =>
+                prev.includes(tag) ? prev.filter((item) => item !== tag) : [...prev, tag]
+              )
+            }}
+            onClearTagFilters={() => setSelectedTags([])}
+            onTogglePin={(noteId) => {
+              updateNoteById(
+                noteId,
+                (note) => ({
+                  ...note,
+                  isPinned: !note.isPinned,
+                  updatedAt: Date.now(),
+                  relativeTime: 'just now'
+                }),
+                { delayMs: 0 }
+              )
+            }}
+            onRestoreNote={restoreNoteFromTrash}
+            onMoveNoteToTrash={moveNoteToTrash}
+            onPermanentDeleteNote={permanentlyDeleteNote}
           />
         </div>
 
-        <div className="min-h-0 min-w-0 flex-1">
+        <div
+          className={[
+            'min-h-0 min-w-0 flex-1 overflow-hidden border border-[#ccd7ea] bg-[#f7f9ff]',
+            isExpandedView
+              ? 'rounded-none shadow-none'
+              : 'rounded-2xl shadow-[0_14px_30px_rgba(28,43,75,0.09)]'
+          ].join(' ')}
+        >
           <EditorPane
             menuItems={menuItems}
             onFileNew={handleFileNew}
@@ -940,11 +1560,18 @@ export function DesktopNotesLayout({
             onFileSave={handleFileSave}
             onFileSaveAs={handleFileSaveAs}
             onFilePrint={handleFilePrint}
+            onFileExportMarkdown={handleFileExportMarkdown}
+            onFileExportPdf={handleFileExportPdf}
             onHelpShortcuts={handleOpenShortcutsPage}
             onHelpPrivacy={handleOpenPrivacyPage}
             onHelpAbout={handleOpenAboutModal}
             noteTitle={activeNote?.title ?? null}
             noteContent={activeNote?.content ?? null}
+            noteFolder={activeNote?.folder ?? null}
+            noteTags={activeNote?.tags ?? []}
+            availableFolders={availableFolders.map((item) => item.name)}
+            isNotePinned={Boolean(activeNote?.isPinned)}
+            isNoteDeleted={Boolean(activeNote?.isDeleted)}
             characterCount={activeNoteCharacterCount}
             isStatusBarVisible={isStatusBarVisible}
             onToggleStatusBar={() => setIsStatusBarVisible((prev) => !prev)}
@@ -960,16 +1587,40 @@ export function DesktopNotesLayout({
             onToggleSpellCheck={() => setIsSpellCheckEnabled((prev) => !prev)}
             onChangeNoteTitle={handleChangeActiveNoteTitle}
             onChangeNoteContent={handleChangeActiveNoteContent}
+            onChangeNoteFolder={handleChangeActiveNoteFolder}
+            onChangeNoteTags={handleChangeActiveNoteTags}
             onDeleteNote={handleRequestDeleteActiveNote}
+            onRestoreNote={() => {
+              if (!activeNote) return
+              restoreNoteFromTrash(activeNote.id)
+            }}
+            onPermanentDeleteNote={() => {
+              if (!activeNote) return
+              permanentlyDeleteNote(activeNote.id)
+            }}
+            onTogglePinNote={handleTogglePinNote}
+            onOpenVersionHistory={() => setIsVersionHistoryOpen(true)}
+            saveState={saveState}
+            lastSavedAt={lastSavedAt}
             isExpandedView={isExpandedView}
             onToggleExpandedView={handleToggleExpandedView}
+            appTheme={appTheme}
+            onChangeTheme={setAppTheme}
+            isMarkdownPreviewEnabled={isMarkdownPreviewEnabled}
+            onToggleMarkdownPreview={() => setIsMarkdownPreviewEnabled((prev) => !prev)}
+            onOpenCommandPalette={() => {
+              setCommandPaletteSession((prev) => prev + 1)
+              setIsCommandPaletteOpen(true)
+            }}
           />
         </div>
       </div>
 
       <ConfirmModal
         title="Confirm"
-        message="Are you sure you want to delete this note?"
+        message={
+          activeNote?.isDeleted ? 'Delete this note permanently?' : 'Move this note to trash?'
+        }
         isOpen={isDeleteModalOpen}
         onConfirm={handleConfirmDeleteActiveNote}
         onCancel={() => setIsDeleteModalOpen(false)}
@@ -977,7 +1628,9 @@ export function DesktopNotesLayout({
 
       <ConfirmModal
         title="Confirm"
-        message="Are you sure you want to clear all notes?"
+        message={
+          isTrashView ? 'Permanently delete all notes in trash?' : 'Move all active notes to trash?'
+        }
         isOpen={isClearModalOpen}
         onConfirm={handleConfirmClearNotes}
         onCancel={() => setIsClearModalOpen(false)}
@@ -989,6 +1642,20 @@ export function DesktopNotesLayout({
         onFileNameChange={setSaveAsFileName}
         onSave={handleConfirmSaveAs}
         onCancel={handleCancelSaveAs}
+      />
+
+      <VersionHistoryModal
+        isOpen={isVersionHistoryOpen}
+        versions={activeNote?.versions ?? []}
+        onRestoreVersion={handleRestoreVersion}
+        onClose={() => setIsVersionHistoryOpen(false)}
+      />
+
+      <CommandPaletteModal
+        key={commandPaletteSession}
+        isOpen={isCommandPaletteOpen}
+        actions={commandPaletteActions}
+        onClose={() => setIsCommandPaletteOpen(false)}
       />
 
       <AboutModal isOpen={isAboutModalOpen} onClose={() => setIsAboutModalOpen(false)} />
@@ -1008,40 +1675,44 @@ export function DesktopNotesLayout({
 
             @page {
               size: auto;
-              margin: 20mm 16mm;
+              margin: 16mm;
             }
 
             .app-print-note-page {
-              font-family: Arial, sans-serif;
-              color: #1f232d;
+              font-family: "Segoe UI", Arial, sans-serif;
+              color: #1f2735;
               background: #ffffff;
             }
 
             .app-print-note-meta {
               display: grid;
-              grid-template-columns: 1fr 1fr 1fr;
+              grid-template-columns: 1fr 1fr;
               align-items: center;
-              margin: 0 0 16px;
+              margin: 0 0 14px;
+              border-bottom: 1px solid #d8deea;
+              padding-bottom: 8px;
               font-size: 12px;
             }
 
             .app-print-note-time {
               justify-self: start;
+              color: #5e6f8d;
             }
 
             .app-print-note-title {
-              justify-self: center;
-              color: #8e213a;
+              justify-self: end;
+              color: #203758;
+              font-weight: 600;
             }
 
             .app-print-note-body {
               margin: 0;
               white-space: pre-wrap;
               word-break: break-word;
-              font-size: 34px;
-              line-height: 1.35;
-              font-style: italic;
-              font-weight: 700;
+              font-size: 15px;
+              line-height: 1.5;
+              font-style: normal;
+              font-weight: 400;
             }
           }
         `}</style>
@@ -1051,7 +1722,6 @@ export function DesktopNotesLayout({
               {printTimestamp || formatPrintTimestamp(new Date())}
             </span>
             <span className="app-print-note-title">{printTitle}</span>
-            <span />
           </div>
           <pre className="app-print-note-body">{printContent}</pre>
         </main>

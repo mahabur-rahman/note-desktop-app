@@ -13,15 +13,17 @@ export function AppTopBar({
   onToggleSidebar
 }: AppTopBarProps): React.JSX.Element {
   return (
-    <header className="flex h-12 items-center gap-3 border-t border-[#1d9ac2] bg-[#05070b] px-4 text-white">
+    <header className="flex h-14 items-center gap-3 border-b border-[#2a5787] bg-[linear-gradient(90deg,#102744_0%,#1a4873_52%,#1f5f97_100%)] px-4 text-white md:px-5">
       <IconButton
         ariaLabel={isSidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
-        className="cursor-pointer bg-transparent p-0 text-lg text-white"
+        className="cursor-pointer rounded p-1 text-lg text-[#eaf2ff] transition hover:bg-[#2f618f]"
         onClick={onToggleSidebar}
       >
         <FiMenu />
       </IconButton>
-      <h1 className="m-0 text-base font-normal tracking-[0.05em]">{title}</h1>
+      <h1 className="m-0 text-sm font-semibold tracking-[0.1em] text-[#f7fbff] md:text-base">
+        {title}
+      </h1>
     </header>
   )
 }

@@ -1,3 +1,10 @@
+export interface NoteVersionRecord {
+  id: string
+  title: string
+  content: string
+  savedAt: number
+}
+
 export interface NoteSummary {
   id: string
   title: string
@@ -6,6 +13,12 @@ export interface NoteSummary {
   relativeTime: string
   createdAt: number
   updatedAt: number
+  folder: string
+  tags: string[]
+  isPinned: boolean
+  isDeleted: boolean
+  deletedAt: number | null
+  versions: NoteVersionRecord[]
 }
 
 export type SidebarViewMode = 'compact' | 'detailed'
@@ -18,3 +31,5 @@ export interface EditorFontSettings {
   fontStyle: 'normal' | 'italic'
   lineHeight: 1 | 1.15 | 1.5 | 2
 }
+
+export type AppTheme = 'light' | 'sepia' | 'dark'
