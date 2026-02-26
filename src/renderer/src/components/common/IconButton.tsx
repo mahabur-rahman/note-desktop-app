@@ -14,7 +14,12 @@ export function IconButton({
   onClick
 }: IconButtonProps): React.JSX.Element {
   return (
-    <button type="button" aria-label={ariaLabel} className={className} onClick={onClick}>
+    <button
+      type="button"
+      aria-label={ariaLabel}
+      className={`focus-visible:ring-2 focus-visible:ring-[#88a5ff] focus-visible:ring-offset-1 focus-visible:outline-none ${className}`}
+      onClick={onClick}
+    >
       {children}
     </button>
   )

@@ -71,6 +71,7 @@ export function EditorPane({
   onToggleExpandedView
 }: EditorPaneProps): React.JSX.Element {
   const hasNote = noteTitle !== null
+  const noteLineCount = noteContent ? noteContent.split(/\r?\n/).length : 0
   const resolvedFontFamily =
     editorFontSettings.fontFamily === 'default' ? undefined : editorFontSettings.fontFamily
   const textareaRef = useRef<HTMLTextAreaElement | null>(null)
@@ -395,10 +396,10 @@ export function EditorPane({
     <>
       <section
         className={[
-          'grid h-full min-h-[62dvh] bg-[#f8f8f9] md:min-h-0',
+          'grid h-full min-h-[62dvh] bg-[linear-gradient(180deg,#f9fbff_0%,#f5f8ff_100%)] md:min-h-0',
           isStatusBarVisible
-            ? 'grid-rows-[44px_54px_minmax(320px,1fr)_28px] md:grid-rows-[46px_62px_minmax(0,1fr)_28px]'
-            : 'grid-rows-[44px_54px_minmax(320px,1fr)] md:grid-rows-[46px_62px_minmax(0,1fr)]'
+            ? 'grid-rows-[48px_54px_minmax(320px,1fr)_32px] md:grid-rows-[52px_62px_minmax(0,1fr)_34px]'
+            : 'grid-rows-[48px_54px_minmax(320px,1fr)] md:grid-rows-[52px_62px_minmax(0,1fr)]'
         ].join(' ')}
       >
         <TopMenu
@@ -436,10 +437,10 @@ export function EditorPane({
           onChangeTitle={onChangeNoteTitle}
           onDeleteNote={onDeleteNote}
         />
-        <div className="bg-[#f7f7f8] p-4 md:p-5">
+        <div className="bg-[#f8faff] p-4 md:p-5">
           <textarea
             className={[
-              'h-full w-full resize-none border-0 bg-transparent text-[15px] text-[#2f3440] outline-none',
+              'h-full w-full resize-none rounded-xl border border-[#d6dfef] bg-white px-4 py-3 text-[15px] text-[#243650] shadow-[inset_0_1px_2px_rgba(20,35,64,0.04)] outline-none focus:border-[#93a8d2] md:px-5 md:py-4',
               hasNote ? 'cursor-text' : 'cursor-not-allowed text-[#8f97a4]',
               isWordWrapEnabled ? 'whitespace-pre-wrap' : 'overflow-x-auto whitespace-pre'
             ].join(' ')}
@@ -450,7 +451,7 @@ export function EditorPane({
               fontStyle: editorFontSettings.fontStyle,
               lineHeight: editorFontSettings.lineHeight
             }}
-            placeholder="Write your note..."
+            placeholder="Start writing your note..."
             value={noteContent ?? ''}
             ref={textareaRef}
             disabled={!hasNote}
@@ -460,8 +461,9 @@ export function EditorPane({
           />
         </div>
         {isStatusBarVisible && (
-          <div className="flex items-center justify-start border-t border-[#d9dee5] px-3 text-sm text-[#3d66f8] md:px-4">
+          <div className="flex items-center justify-between border-t border-[#d7dfef] bg-[#f4f7ff] px-3 text-xs font-medium text-[#3e5b88] md:px-4 md:text-sm">
             <span>{`Characters: ${characterCount}`}</span>
+            <span>{`Lines: ${noteLineCount}`}</span>
           </div>
         )}
       </section>
@@ -493,7 +495,7 @@ export function EditorPane({
       />
 
       {actionToastMessage && (
-        <div className="pointer-events-none fixed bottom-7 left-1/2 z-[70] -translate-x-1/2 rounded bg-[#343536] px-12 py-3 text-[15px] text-[#f5f6f8] shadow-[0_8px_24px_rgba(0,0,0,0.28)]">
+        <div className="pointer-events-none fixed bottom-8 left-1/2 z-[70] -translate-x-1/2 rounded-lg bg-[#1d2432] px-10 py-3 text-sm font-medium text-[#f5f8ff] shadow-[0_10px_28px_rgba(11,18,32,0.35)]">
           {actionToastMessage}
         </div>
       )}

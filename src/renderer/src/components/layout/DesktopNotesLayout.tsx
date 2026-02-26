@@ -899,7 +899,7 @@ export function DesktopNotesLayout({
   }
 
   return (
-    <main className="flex h-screen w-full flex-col bg-[#f5f6f8] font-sans text-[#2f3340]">
+    <main className="flex h-screen w-full flex-col bg-[radial-gradient(circle_at_top,#f3f6ff_0%,#edf2fb_42%,#e8eef9_100%)] font-sans text-[#2f3340]">
       {!isExpandedView && (
         <AppTopBar
           title={appTitle}
@@ -908,11 +908,22 @@ export function DesktopNotesLayout({
         />
       )}
 
-      <div className="flex min-h-0 flex-1">
+      <div
+        className={[
+          'flex min-h-0 flex-1',
+          isExpandedView ? '' : 'gap-3 px-3 pt-3 pb-3 md:gap-4 md:px-4 md:pt-4 md:pb-4'
+        ].join(' ')}
+      >
         <div
           className={[
             'min-h-0 shrink-0 overflow-hidden transition-[width] duration-200 ease-out',
-            isSidebarOpen ? 'w-[280px] border-r border-[#d9dee5] xl:w-[332px]' : 'w-0 border-r-0'
+            isSidebarOpen
+              ? [
+                  'w-[288px] xl:w-[340px]',
+                  'rounded-2xl border border-[#ccd7ea] bg-[#f4f7fd]',
+                  'shadow-[0_10px_24px_rgba(32,49,82,0.08)]'
+                ].join(' ')
+              : 'w-0 border-0'
           ].join(' ')}
         >
           <NotesSidebar
@@ -932,7 +943,14 @@ export function DesktopNotesLayout({
           />
         </div>
 
-        <div className="min-h-0 min-w-0 flex-1">
+        <div
+          className={[
+            'min-h-0 min-w-0 flex-1 overflow-hidden border border-[#ccd7ea] bg-[#f7f9ff]',
+            isExpandedView
+              ? 'rounded-none shadow-none'
+              : 'rounded-2xl shadow-[0_14px_30px_rgba(28,43,75,0.09)]'
+          ].join(' ')}
+        >
           <EditorPane
             menuItems={menuItems}
             onFileNew={handleFileNew}

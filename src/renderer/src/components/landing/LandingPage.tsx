@@ -28,7 +28,7 @@ const compatibilityItems = [
 export function LandingPage(): React.JSX.Element {
   return (
     <main
-      className="min-h-screen bg-[linear-gradient(180deg,#f4f6fb_0%,#eef2f9_55%,#f8f9fc_100%)] text-[#1f2d45]"
+      className="min-h-screen bg-[radial-gradient(circle_at_top,#f8fbff_0%,#eef3ff_42%,#e9f0fc_100%)] text-[#1f2d45]"
       style={{ fontFamily: '"Trebuchet MS", "Segoe UI", sans-serif' }}
     >
       <header className="sticky top-0 z-20 border-b border-[#ccd5e6] bg-[#0c1117]/95 backdrop-blur">
@@ -63,10 +63,14 @@ export function LandingPage(): React.JSX.Element {
             <p className="mb-4 inline-flex w-fit rounded-full border border-[#cfd7e8] bg-white/80 px-3 py-1 text-xs font-semibold tracking-wide text-[#3b4e71]">
               Professional Writing Workspace
             </p>
-            <h1 className="text-4xl leading-tight font-semibold tracking-tight text-[#1b2a45] md:text-6xl">
-              Write Faster.
+            <h1 className="text-4xl leading-tight font-semibold tracking-tight md:text-6xl">
+              <span className="bg-[linear-gradient(90deg,#294685_0%,#4f63f6_48%,#3ea8e0_100%)] bg-clip-text text-transparent">
+                Write Faster.
+              </span>
               <br />
-              Ship Cleaner Notes.
+              <span className="bg-[linear-gradient(90deg,#1e355f_0%,#5a42dc_52%,#2c9de0_100%)] bg-clip-text text-transparent">
+                Ship Cleaner Notes.
+              </span>
             </h1>
             <p className="mt-5 max-w-[620px] text-base leading-7 text-[#475d81] md:text-lg">
               Online Notepad helps you draft, edit, and export notes in seconds. Built for speed
@@ -121,7 +125,11 @@ export function LandingPage(): React.JSX.Element {
 
       <section id="overview" className="mx-auto w-full max-w-[1180px] px-5 py-12 md:py-14">
         <div className="rounded-xl border border-[#ced7e8] bg-white p-6 md:p-8">
-          <h2 className="text-2xl font-semibold text-[#1f2d45] md:text-3xl">Overview</h2>
+          <h2 className="text-2xl font-semibold text-[#1f2d45] md:text-3xl">
+            <span className="bg-[linear-gradient(90deg,#2f4f93_0%,#4f63f6_50%,#2f8ccb_100%)] bg-clip-text text-transparent">
+              Overview
+            </span>
+          </h2>
           <div className="mt-5 grid gap-3">
             {overviewItems.map((item) => (
               <article
@@ -137,7 +145,11 @@ export function LandingPage(): React.JSX.Element {
 
       <section id="workflow" className="mx-auto w-full max-w-[1180px] px-5 pb-12 md:pb-14">
         <div className="rounded-xl border border-[#ced7e8] bg-white p-6 md:p-8">
-          <h2 className="text-2xl font-semibold text-[#1f2d45] md:text-3xl">How does it work?</h2>
+          <h2 className="text-2xl font-semibold text-[#1f2d45] md:text-3xl">
+            <span className="bg-[linear-gradient(90deg,#2f4f93_0%,#4f63f6_50%,#2f8ccb_100%)] bg-clip-text text-transparent">
+              How does it work?
+            </span>
+          </h2>
           <div className="mt-5 grid gap-4 md:grid-cols-3">
             {workflowSteps.map((step) => (
               <article
@@ -154,7 +166,11 @@ export function LandingPage(): React.JSX.Element {
 
       <section id="compatibility" className="mx-auto w-full max-w-[1180px] px-5 pb-12 md:pb-14">
         <div className="rounded-xl border border-[#ced7e8] bg-white p-6 md:p-8">
-          <h2 className="text-2xl font-semibold text-[#1f2d45] md:text-3xl">Compatibility</h2>
+          <h2 className="text-2xl font-semibold text-[#1f2d45] md:text-3xl">
+            <span className="bg-[linear-gradient(90deg,#2f4f93_0%,#4f63f6_50%,#2f8ccb_100%)] bg-clip-text text-transparent">
+              Compatibility
+            </span>
+          </h2>
           <div className="mt-5 overflow-hidden rounded-lg border border-[#d8dfed]">
             <table className="w-full border-collapse text-left text-sm">
               <thead className="bg-[#eef2fb] text-[#2f4567]">
@@ -180,7 +196,7 @@ export function LandingPage(): React.JSX.Element {
         </div>
       </section>
 
-      <footer className="border-t border-[#ccd5e6] bg-[#0f1726] text-[#d5deef]">
+      <footer className="border-t border-[#c8d2e5] bg-[linear-gradient(90deg,#111a2d_0%,#1b2f54_100%)] text-[#d5deef]">
         <div className="mx-auto flex w-full max-w-[1180px] flex-col gap-3 px-5 py-6 text-sm md:flex-row md:items-center md:justify-between">
           <p>Online Notepad</p>
           <div className="flex items-center gap-4 text-xs">

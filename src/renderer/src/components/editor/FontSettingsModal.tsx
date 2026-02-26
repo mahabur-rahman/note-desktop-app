@@ -36,7 +36,7 @@ const lineSpaceOptions = [
 ] as const
 
 const optionBaseClass =
-  'w-full cursor-pointer px-2 py-0.5 text-left text-[15px] text-[#1f2d45] hover:bg-[#e2e4e8]'
+  'w-full cursor-pointer px-2 py-1 text-left text-[14px] text-[#2d4261] transition hover:bg-[#e8eefb]'
 
 export function FontSettingsModal({
   isOpen,
@@ -59,37 +59,40 @@ export function FontSettingsModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/45 px-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-[#0b1324]/60 px-4 backdrop-blur-[2px]"
+      onClick={onClose}
+    >
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Font settings"
-        className="w-full max-w-[620px] overflow-hidden rounded-[3px] border border-[#d8dde5] bg-[#f7f8fa]"
+        className="w-full max-w-[620px] overflow-hidden rounded-xl border border-[#cfdaec] bg-[#f8fbff] shadow-[0_20px_34px_rgba(16,27,46,0.35)]"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-[#d8dde5] px-4 py-2.5">
-          <h2 className="m-0 text-[35px] leading-none font-semibold text-[#29334a]">Font</h2>
+        <div className="flex items-center justify-between border-b border-[#d8e1f0] px-4 py-3">
+          <h2 className="m-0 text-[28px] leading-none font-semibold text-[#273b5c]">Font</h2>
           <IconButton
             ariaLabel="Close font settings modal"
             onClick={onClose}
-            className="cursor-pointer p-1 text-[22px] text-[#26324a]"
+            className="cursor-pointer rounded p-1 text-[22px] text-[#304a72] transition hover:bg-[#eaf1fc]"
           >
             <FiX />
           </IconButton>
         </div>
 
-        <div className="space-y-4 border-b border-[#d8dde5] px-4 py-4">
+        <div className="space-y-4 border-b border-[#d8e1f0] px-4 py-4">
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <p className="mb-1 text-[15px] text-[#1f2d45]">Font</p>
-              <div className="h-[102px] overflow-y-auto border border-[#c9ced7] bg-[#f3f4f6]">
+              <p className="mb-1 text-[15px] font-medium text-[#314766]">Font</p>
+              <div className="h-[102px] overflow-y-auto rounded border border-[#c9d4e8] bg-white">
                 {fontFamilyOptions.map((option) => (
                   <button
                     key={option.label}
                     type="button"
                     className={[
                       optionBaseClass,
-                      settings.fontFamily === option.value ? 'bg-[#d2d4d8]' : ''
+                      settings.fontFamily === option.value ? 'bg-[#e2ebff]' : ''
                     ].join(' ')}
                     onClick={() =>
                       onChange({
@@ -105,15 +108,15 @@ export function FontSettingsModal({
             </div>
 
             <div>
-              <p className="mb-1 text-[15px] text-[#1f2d45]">Size</p>
-              <div className="h-[102px] overflow-y-auto border border-[#c9ced7] bg-[#f3f4f6]">
+              <p className="mb-1 text-[15px] font-medium text-[#314766]">Size</p>
+              <div className="h-[102px] overflow-y-auto rounded border border-[#c9d4e8] bg-white">
                 {fontSizeOptions.map((sizeValue) => (
                   <button
                     key={sizeValue}
                     type="button"
                     className={[
                       optionBaseClass,
-                      settings.fontSize === sizeValue ? 'bg-[#d2d4d8]' : ''
+                      settings.fontSize === sizeValue ? 'bg-[#e2ebff]' : ''
                     ].join(' ')}
                     onClick={() =>
                       onChange({
@@ -131,15 +134,15 @@ export function FontSettingsModal({
 
           <div className="grid gap-3 sm:grid-cols-3">
             <div>
-              <p className="mb-1 text-[15px] text-[#1f2d45]">Weight</p>
-              <div className="h-[74px] overflow-y-auto border border-[#c9ced7] bg-[#f3f4f6]">
+              <p className="mb-1 text-[15px] font-medium text-[#314766]">Weight</p>
+              <div className="h-[74px] overflow-y-auto rounded border border-[#c9d4e8] bg-white">
                 {fontWeightOptions.map((option) => (
                   <button
                     key={option.label}
                     type="button"
                     className={[
                       optionBaseClass,
-                      settings.fontWeight === option.value ? 'bg-[#d2d4d8]' : ''
+                      settings.fontWeight === option.value ? 'bg-[#e2ebff]' : ''
                     ].join(' ')}
                     onClick={() =>
                       onChange({
@@ -155,15 +158,15 @@ export function FontSettingsModal({
             </div>
 
             <div>
-              <p className="mb-1 text-[15px] text-[#1f2d45]">Style</p>
-              <div className="h-[74px] overflow-y-auto border border-[#c9ced7] bg-[#f3f4f6]">
+              <p className="mb-1 text-[15px] font-medium text-[#314766]">Style</p>
+              <div className="h-[74px] overflow-y-auto rounded border border-[#c9d4e8] bg-white">
                 {fontStyleOptions.map((option) => (
                   <button
                     key={option.label}
                     type="button"
                     className={[
                       optionBaseClass,
-                      settings.fontStyle === option.value ? 'bg-[#d2d4d8]' : ''
+                      settings.fontStyle === option.value ? 'bg-[#e2ebff]' : ''
                     ].join(' ')}
                     onClick={() =>
                       onChange({
@@ -179,15 +182,15 @@ export function FontSettingsModal({
             </div>
 
             <div>
-              <p className="mb-1 text-[15px] text-[#1f2d45]">Line space</p>
-              <div className="h-[74px] overflow-y-auto border border-[#c9ced7] bg-[#f3f4f6]">
+              <p className="mb-1 text-[15px] font-medium text-[#314766]">Line space</p>
+              <div className="h-[74px] overflow-y-auto rounded border border-[#c9d4e8] bg-white">
                 {lineSpaceOptions.map((option) => (
                   <button
                     key={option.label}
                     type="button"
                     className={[
                       optionBaseClass,
-                      settings.lineHeight === option.value ? 'bg-[#d2d4d8]' : ''
+                      settings.lineHeight === option.value ? 'bg-[#e2ebff]' : ''
                     ].join(' ')}
                     onClick={() =>
                       onChange({
@@ -208,7 +211,7 @@ export function FontSettingsModal({
           <button
             type="button"
             onClick={onReset}
-            className="inline-flex min-w-[98px] cursor-pointer items-center justify-center rounded bg-[#4f63f6] px-4 py-2 text-[16px] text-white"
+            className="inline-flex min-w-[98px] cursor-pointer items-center justify-center rounded bg-[#4f63f6] px-4 py-2 text-[15px] font-semibold text-white transition hover:bg-[#4158e8]"
           >
             <span>Reset</span>
           </button>
