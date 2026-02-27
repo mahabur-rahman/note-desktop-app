@@ -70,7 +70,7 @@ const defaultEditorFontSettings: EditorFontSettings = {
   fontStyle: 'normal',
   lineHeight: 1.5
 }
-const minVersionSnapshotIntervalMs = 30 * 1000
+const minVersionSnapshotIntervalMs = 1 * 1000
 
 function generateNoteId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -250,6 +250,13 @@ function formatRelativeTime(timestamp: number, now: number = Date.now()): string
 
   const days = Math.floor(diffMs / dayMs)
   return `${days} day${days > 1 ? 's' : ''} ago`
+}
+
+function normalizeSearchText(rawValue: string): string {
+  return rawValue
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase()
 }
 
 function normalizeNotes(notes: Array<Partial<NoteSummary>>): NoteSummary[] {
@@ -697,7 +704,7 @@ export function DesktopNotesLayout({
       .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
   }, [notes])
 
-  const normalizedSearchQuery = searchQuery.trim().toLocaleLowerCase()
+  const normalizedSearchQuery = normalizeSearchText(searchQuery.trim())
 
   const filteredNotes = useMemo(() => {
     return scopedNotes.filter((note) => {
@@ -717,7 +724,7 @@ export function DesktopNotesLayout({
 
       if (normalizedSearchQuery === '') return true
       const haystack = [note.title, note.content, note.folder, note.tags.join(' ')].join(' ')
-      return haystack.toLocaleLowerCase().includes(normalizedSearchQuery)
+      return normalizeSearchText(haystack).includes(normalizedSearchQuery)
     })
   }, [isPinnedOnly, isTrashView, normalizedSearchQuery, scopedNotes, selectedFolder, selectedTags])
 

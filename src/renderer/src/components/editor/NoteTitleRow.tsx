@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { FiClock, FiRotateCcw, FiStar, FiTrash2 } from 'react-icons/fi'
+import { useEffect, useState } from 'react'
+import { FiClock, FiRotateCcw, FiStar, FiTrash2, FiX } from 'react-icons/fi'
 import { IconButton } from '../common/IconButton'
 
 interface NoteTitleRowProps {
@@ -19,15 +19,29 @@ interface NoteTitleRowProps {
   onOpenVersionHistory: () => void
 }
 
-function parseTags(rawValue: string): string[] {
-  const uniqueTags = new Set<string>()
-  rawValue
-    .split(/[,\n;]+/)
-    .map((tag) => tag.trim())
-    .filter((tag) => tag.length > 0)
-    .forEach((tag) => uniqueTags.add(tag))
+function normalizeTag(rawValue: string): string {
+  return rawValue.trim().replace(/\s+/g, ' ')
+}
 
-  return [...uniqueTags]
+function parseTagTokens(rawValue: string): string[] {
+  return rawValue
+    .split(/[,\n;]+/)
+    .map((tag) => normalizeTag(tag))
+    .filter((tag) => tag.length > 0)
+}
+
+function mergeTags(existingTags: string[], incomingTags: string[]): string[] {
+  const seen = new Set(existingTags.map((tag) => tag.toLocaleLowerCase()))
+  const nextTags = [...existingTags]
+
+  incomingTags.forEach((tag) => {
+    const normalizedKey = tag.toLocaleLowerCase()
+    if (seen.has(normalizedKey)) return
+    seen.add(normalizedKey)
+    nextTags.push(tag)
+  })
+
+  return nextTags
 }
 
 export function NoteTitleRow({
@@ -47,7 +61,29 @@ export function NoteTitleRow({
   onOpenVersionHistory
 }: NoteTitleRowProps): React.JSX.Element {
   const hasNote = title !== null
-  const [tagInputValue, setTagInputValue] = useState(tags.join(', '))
+  const [tagDraft, setTagDraft] = useState('')
+  const [localTags, setLocalTags] = useState(tags)
+
+  useEffect(() => {
+    setLocalTags(tags)
+  }, [tags])
+
+  const applyNextTags = (nextTags: string[]): void => {
+    setLocalTags(nextTags)
+    onChangeTags(nextTags)
+  }
+
+  const commitSingleTag = (rawValue: string): void => {
+    const normalizedTag = normalizeTag(rawValue)
+    if (!normalizedTag) return
+    applyNextTags(mergeTags(localTags, [normalizedTag]))
+  }
+
+  const commitBulkTags = (rawValue: string): void => {
+    const incomingTags = parseTagTokens(rawValue)
+    if (incomingTags.length === 0) return
+    applyNextTags(mergeTags(localTags, incomingTags))
+  }
 
   return (
     <div className="border-b border-[#d7dfef] bg-[#f8faff]">
@@ -132,33 +168,69 @@ export function NoteTitleRow({
 
         <label className="grid grid-cols-[40px_minmax(0,1fr)] items-center gap-2 text-[13px] text-[#536886]">
           <span>Tags</span>
-          <input
-            type="text"
-            value={tagInputValue}
-            disabled={!hasNote || isDeleted}
-            onChange={(event) => {
-              const rawValue = event.target.value
-              setTagInputValue(rawValue)
-              onChangeTags(parseTags(rawValue))
-            }}
-            onBlur={() => {
-              const normalizedValue = parseTags(tagInputValue).join(', ')
-              setTagInputValue(normalizedValue)
-              onChangeTags(parseTags(normalizedValue))
-            }}
-            onKeyDown={(event) => {
-              if (event.key !== 'Enter') return
-              event.preventDefault()
-              const normalizedValue = parseTags(tagInputValue).join(', ')
-              setTagInputValue(normalizedValue)
-              onChangeTags(parseTags(normalizedValue))
-            }}
-            placeholder="work, ideas, project"
-            className={[
-              'h-8 rounded border border-[#cdd8ec] bg-white px-2 text-[13px] text-[#304564] outline-none focus:border-[#9bb0d7]',
-              !hasNote || isDeleted ? 'cursor-not-allowed opacity-70' : 'cursor-text'
-            ].join(' ')}
-          />
+          <div>
+            <div className="mb-1.5 flex flex-wrap gap-1">
+              {localTags.map((tag, tagIndex) => (
+                <span
+                  key={`${tag}-${tagIndex}`}
+                  className="inline-flex items-center gap-1 rounded-full border border-[#cfdaf0] bg-[#eaf0ff] px-2 py-0.5 text-xs font-semibold text-[#3a557c]"
+                >
+                  <span>{tag}</span>
+                  {!isDeleted && hasNote && (
+                    <button
+                      type="button"
+                      className="inline-flex h-4 w-4 cursor-pointer items-center justify-center rounded-full text-[#5e7392] transition hover:bg-[#d8e4ff] hover:text-[#304f78]"
+                      onClick={(event) => {
+                        event.preventDefault()
+                        event.stopPropagation()
+                        applyNextTags(localTags.filter((_, index) => index !== tagIndex))
+                      }}
+                    >
+                      <FiX className="text-[10px]" />
+                    </button>
+                  )}
+                </span>
+              ))}
+            </div>
+
+            <input
+              type="text"
+              value={tagDraft}
+              disabled={!hasNote || isDeleted}
+              onChange={(event) => setTagDraft(event.target.value)}
+              onBlur={() => {
+                commitSingleTag(tagDraft)
+                setTagDraft('')
+              }}
+              onKeyDown={(event) => {
+                if (
+                  event.key === 'Backspace' &&
+                  tagDraft.trim().length === 0 &&
+                  localTags.length > 0
+                ) {
+                  event.preventDefault()
+                  applyNextTags(localTags.slice(0, -1))
+                  return
+                }
+
+                if (event.key !== 'Enter') return
+                event.preventDefault()
+                commitSingleTag(tagDraft)
+                setTagDraft('')
+              }}
+              onPaste={(event) => {
+                const pastedText = event.clipboardData.getData('text')
+                if (!pastedText) return
+                event.preventDefault()
+                commitBulkTags(pastedText)
+              }}
+              placeholder="Type tag then press Enter"
+              className={[
+                'h-8 w-full rounded border border-[#cdd8ec] bg-white px-2 text-[13px] text-[#304564] outline-none focus:border-[#9bb0d7]',
+                !hasNote || isDeleted ? 'cursor-not-allowed opacity-70' : 'cursor-text'
+              ].join(' ')}
+            />
+          </div>
         </label>
 
         {isDeleted && hasNote && (
