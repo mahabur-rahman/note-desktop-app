@@ -402,7 +402,7 @@ export function TopMenu({
                       <span className="inline-flex w-5 items-center justify-center text-[16px]">
                         <FiUploadCloud />
                       </span>
-                      <span>Export Markdown</span>
+                      <span>Export TXT</span>
                     </button>
                     <button
                       type="button"

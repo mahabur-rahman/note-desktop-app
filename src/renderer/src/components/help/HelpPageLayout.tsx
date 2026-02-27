@@ -19,19 +19,19 @@ export function HelpPageLayout({ heading, children }: HelpPageLayoutProps): Reac
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#f7faff_0%,#edf3ff_45%,#e8effc_100%)] text-[#1f2d45]">
-      <header className="flex h-12 items-center justify-between border-b border-[#1f3158] bg-[linear-gradient(90deg,#0c1426_0%,#152b4e_100%)] px-4 text-sm text-[#f4f7fb]">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#f5fbfa_0%,#eaf5f4_45%,#e3efef_100%)] text-[#1f2d45]">
+      <header className="flex h-12 items-center justify-between border-b border-[#1f4e58] bg-[linear-gradient(90deg,#0c2228_0%,#133840_55%,#1b4f57_100%)] px-4 text-sm text-[#f4f7fb]">
         <span className="font-semibold tracking-[0.12em]">NOTENOVA STUDIO</span>
         <button
           type="button"
           onClick={handleBack}
-          className="rounded border border-[#314977] bg-[#1a3158] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#f4f8ff] transition hover:bg-[#27497e]"
+          className="rounded border border-[#3a6d78] bg-[#1f4952] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#f4f8ff] transition hover:bg-[#2a5f6a]"
         >
           Back
         </button>
       </header>
 
-      <section className="grid min-h-28 place-items-center bg-[linear-gradient(90deg,#3655db_0%,#2f8ad1_100%)] px-4 py-9 text-white">
+      <section className="grid min-h-28 place-items-center bg-[linear-gradient(90deg,#1b5f63_0%,#228081_52%,#2e9898_100%)] px-4 py-9 text-white">
         <h1 className="text-center text-2xl font-semibold md:text-5xl">{heading}</h1>
       </section>
 

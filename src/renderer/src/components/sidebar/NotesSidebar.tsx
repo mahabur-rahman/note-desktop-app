@@ -38,6 +38,8 @@ interface NotesSidebarProps {
   availableFolders: Array<{ name: string; count: number }>
   selectedFolder: string
   onSelectFolder: (folderName: string) => void
+  isPinnedOnly: boolean
+  onTogglePinnedOnly: () => void
   availableTags: Array<{ name: string; count: number }>
   selectedTags: string[]
   onToggleTag: (tag: string) => void
@@ -46,6 +48,51 @@ interface NotesSidebarProps {
   onRestoreNote: (noteId: string) => void
   onMoveNoteToTrash: (noteId: string) => void
   onPermanentDeleteNote: (noteId: string) => void
+}
+
+interface FolderTreeNode {
+  path: string
+  label: string
+  depth: number
+  count: number
+}
+
+function buildFolderTreeNodes(folders: Array<{ name: string; count: number }>): FolderTreeNode[] {
+  const treeMap = new Map<string, { count: number; depth: number }>()
+
+  folders.forEach((folder) => {
+    const tokens = folder.name
+      .split('/')
+      .map((token) => token.trim())
+      .filter((token) => token.length > 0)
+    if (tokens.length === 0) return
+
+    let currentPath = ''
+    tokens.forEach((token, index) => {
+      currentPath = currentPath ? `${currentPath}/${token}` : token
+      const existing = treeMap.get(currentPath)
+      if (existing) {
+        existing.count += folder.count
+        return
+      }
+
+      treeMap.set(currentPath, {
+        count: folder.count,
+        depth: index
+      })
+    })
+  })
+
+  return [...treeMap.entries()]
+    .map(([path, data]) => ({
+      path,
+      label: path.split('/').pop() ?? path,
+      depth: data.depth,
+      count: data.count
+    }))
+    .sort((first, second) =>
+      first.path.localeCompare(second.path, undefined, { sensitivity: 'base' })
+    )
 }
 
 export function NotesSidebar({
@@ -68,6 +115,8 @@ export function NotesSidebar({
   availableFolders,
   selectedFolder,
   onSelectFolder,
+  isPinnedOnly,
+  onTogglePinnedOnly,
   availableTags,
   selectedTags,
   onToggleTag,
@@ -101,6 +150,9 @@ export function NotesSidebar({
   }, [isActionsMenuOpen, isSortMenuOpen])
 
   const pinnedCount = notes.filter((note) => note.isPinned).length
+  const folderTreeNodes = buildFolderTreeNodes(availableFolders)
+  const regularNotes = notes.filter((note) => !note.isPinned)
+  const pinnedNotes = notes.filter((note) => note.isPinned)
 
   return (
     <aside className="flex h-full min-h-0 flex-col bg-[linear-gradient(180deg,#f7f9ff_0%,#f0f4fc_100%)]">
@@ -178,20 +230,25 @@ export function NotesSidebar({
                   <span>All folders</span>
                   <span>{availableFolders.reduce((sum, folder) => sum + folder.count, 0)}</span>
                 </button>
-                {availableFolders.map((folder) => (
+                {folderTreeNodes.map((folderNode) => (
                   <button
-                    key={folder.name}
+                    key={folderNode.path}
                     type="button"
                     className={[
                       'flex h-8 cursor-pointer items-center justify-between rounded px-2 text-left text-[13px] transition',
-                      selectedFolder === folder.name
+                      selectedFolder === folderNode.path
                         ? 'bg-[#dfe8fb] text-[#1f3356]'
                         : 'text-[#375173] hover:bg-[#edf2fd]'
                     ].join(' ')}
-                    onClick={() => onSelectFolder(folder.name)}
+                    onClick={() => onSelectFolder(folderNode.path)}
                   >
-                    <span className="truncate">{folder.name}</span>
-                    <span>{folder.count}</span>
+                    <span
+                      className="truncate"
+                      style={{ paddingLeft: `${Math.min(folderNode.depth, 4) * 12}px` }}
+                    >
+                      {folderNode.label}
+                    </span>
+                    <span>{folderNode.count}</span>
                   </button>
                 ))}
               </div>
@@ -304,10 +361,21 @@ export function NotesSidebar({
           </div>
           <div className="inline-flex items-center gap-2 text-[12px] font-semibold text-[#5b6f8f]">
             {!isTrashView && pinnedCount > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-[#e7eefc] px-2 py-1">
-                <FiStar className="text-[#d08f11]" />
-                <span>{pinnedCount}</span>
-              </span>
+              <>
+                <button
+                  type="button"
+                  onClick={onTogglePinnedOnly}
+                  className={[
+                    'inline-flex cursor-pointer items-center gap-1 rounded-full px-2 py-1 transition',
+                    isPinnedOnly
+                      ? 'bg-[#d08f11] text-white'
+                      : 'bg-[#e7eefc] text-[#5b6f8f] hover:bg-[#dbe6fb]'
+                  ].join(' ')}
+                >
+                  <FiStar className={isPinnedOnly ? 'text-white' : 'text-[#d08f11]'} />
+                  <span>{isPinnedOnly ? 'Pinned only' : `${pinnedCount}`}</span>
+                </button>
+              </>
             )}
           </div>
           <div ref={actionsMenuRef}>
@@ -416,96 +484,163 @@ export function NotesSidebar({
                 : 'No saved notes.'}
           </div>
         ) : (
-          notes.map((note) => (
-            <div
-              key={note.id}
-              className={[
-                'border-t border-[#d9e1ef] transition',
-                note.id === activeNoteId
-                  ? 'bg-[linear-gradient(90deg,#e7edff_0%,#edf2ff_100%)]'
-                  : 'bg-[#f7f9ff] hover:bg-[#eff4ff]'
-              ].join(' ')}
-            >
-              <button
-                type="button"
-                onClick={() => onSelectNote(note.id)}
-                className="w-full cursor-pointer text-left"
-              >
-                <div className={viewMode === 'compact' ? 'px-3 py-2.5' : 'p-4'}>
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="m-0 line-clamp-1 text-[16px] leading-[1.2] font-semibold text-[#263a5a]">
-                      {note.title || 'Untitled Note'}
-                    </h3>
-                    {!isTrashView && note.isPinned && (
-                      <FiStar className="shrink-0 text-[15px] text-[#d08f11]" />
-                    )}
-                  </div>
-                  {viewMode === 'detailed' && (
-                    <p className="my-1 line-clamp-2 text-[14px] text-[#4d5f7e]">{note.excerpt}</p>
-                  )}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className={
-                        viewMode === 'compact'
-                          ? 'text-xs font-medium text-[#667895]'
-                          : 'text-[13px] font-medium text-[#667895]'
-                      }
-                    >
-                      {note.relativeTime}
-                    </span>
-                    {!isTrashView && (
-                      <span className="rounded-full bg-[#e9effc] px-2 py-0.5 text-[11px] font-semibold text-[#4f6484]">
-                        {note.folder}
-                      </span>
-                    )}
-                  </div>
+          <>
+            {!isTrashView && !isPinnedOnly && pinnedNotes.length > 0 && (
+              <>
+                <div className="sticky top-0 z-[1] border-y border-[#d9e1ef] bg-[#eaf0fe] px-3 py-1 text-[11px] font-semibold tracking-[0.04em] text-[#4d6385] uppercase">
+                  Pinned
                 </div>
-              </button>
-
-              <div className="flex items-center justify-end gap-1 border-t border-[#dde5f3] px-2 py-1.5">
-                {!isTrashView ? (
-                  <>
-                    <button
-                      type="button"
-                      className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded text-[#7b8ca7] transition hover:bg-[#e7edf9] hover:text-[#d08f11]"
-                      onClick={() => onTogglePin(note.id)}
-                    >
-                      <FiStar />
-                    </button>
-                    <button
-                      type="button"
-                      className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded text-[#8b9ab1] transition hover:bg-[#e7edf9] hover:text-[#b9324b]"
-                      onClick={() => onMoveNoteToTrash(note.id)}
-                      title="Move to trash"
-                    >
-                      <FiArchive />
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      className="inline-flex h-7 cursor-pointer items-center gap-1 rounded bg-[#4f63f6] px-2 text-xs font-semibold text-white transition hover:bg-[#4158e8]"
-                      onClick={() => onRestoreNote(note.id)}
-                    >
-                      <FiRotateCcw />
-                      <span>Restore</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="inline-flex h-7 cursor-pointer items-center gap-1 rounded bg-[#f3e4e9] px-2 text-xs font-semibold text-[#b72b46] transition hover:bg-[#f0d8df]"
-                      onClick={() => onPermanentDeleteNote(note.id)}
-                    >
-                      <FiTrash2 />
-                      <span>Delete</span>
-                    </button>
-                  </>
+                {pinnedNotes.map((note) => (
+                  <NoteCard
+                    key={note.id}
+                    note={note}
+                    activeNoteId={activeNoteId}
+                    viewMode={viewMode}
+                    isTrashView={isTrashView}
+                    onSelectNote={onSelectNote}
+                    onTogglePin={onTogglePin}
+                    onMoveNoteToTrash={onMoveNoteToTrash}
+                    onRestoreNote={onRestoreNote}
+                    onPermanentDeleteNote={onPermanentDeleteNote}
+                  />
+                ))}
+                {regularNotes.length > 0 && (
+                  <div className="sticky top-0 z-[1] border-y border-[#d9e1ef] bg-[#f0f4fd] px-3 py-1 text-[11px] font-semibold tracking-[0.04em] text-[#5c6f8c] uppercase">
+                    Notes
+                  </div>
                 )}
-              </div>
-            </div>
-          ))
+              </>
+            )}
+
+            {(isTrashView || isPinnedOnly ? notes : regularNotes).map((note) => (
+              <NoteCard
+                key={note.id}
+                note={note}
+                activeNoteId={activeNoteId}
+                viewMode={viewMode}
+                isTrashView={isTrashView}
+                onSelectNote={onSelectNote}
+                onTogglePin={onTogglePin}
+                onMoveNoteToTrash={onMoveNoteToTrash}
+                onRestoreNote={onRestoreNote}
+                onPermanentDeleteNote={onPermanentDeleteNote}
+              />
+            ))}
+          </>
         )}
       </div>
     </aside>
+  )
+}
+
+interface NoteCardProps {
+  note: NoteSummary
+  activeNoteId: string
+  viewMode: SidebarViewMode
+  isTrashView: boolean
+  onSelectNote: (noteId: string) => void
+  onTogglePin: (noteId: string) => void
+  onMoveNoteToTrash: (noteId: string) => void
+  onRestoreNote: (noteId: string) => void
+  onPermanentDeleteNote: (noteId: string) => void
+}
+
+function NoteCard({
+  note,
+  activeNoteId,
+  viewMode,
+  isTrashView,
+  onSelectNote,
+  onTogglePin,
+  onMoveNoteToTrash,
+  onRestoreNote,
+  onPermanentDeleteNote
+}: NoteCardProps): React.JSX.Element {
+  return (
+    <div
+      className={[
+        'border-t border-[#d9e1ef] transition',
+        note.id === activeNoteId
+          ? 'bg-[linear-gradient(90deg,#e7edff_0%,#edf2ff_100%)]'
+          : 'bg-[#f7f9ff] hover:bg-[#eff4ff]'
+      ].join(' ')}
+    >
+      <button
+        type="button"
+        onClick={() => onSelectNote(note.id)}
+        className="w-full cursor-pointer text-left"
+      >
+        <div className={viewMode === 'compact' ? 'px-3 py-2.5' : 'p-4'}>
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="m-0 line-clamp-1 text-[16px] leading-[1.2] font-semibold text-[#263a5a]">
+              {note.title || 'Untitled Note'}
+            </h3>
+            {!isTrashView && note.isPinned && (
+              <FiStar className="shrink-0 text-[15px] text-[#d08f11]" />
+            )}
+          </div>
+          {viewMode === 'detailed' && (
+            <p className="my-1 line-clamp-2 text-[14px] text-[#4d5f7e]">{note.excerpt}</p>
+          )}
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={
+                viewMode === 'compact'
+                  ? 'text-xs font-medium text-[#667895]'
+                  : 'text-[13px] font-medium text-[#667895]'
+              }
+            >
+              {note.relativeTime}
+            </span>
+            {!isTrashView && note.folder.trim().length > 0 && (
+              <span className="rounded-full bg-[#e9effc] px-2 py-0.5 text-[11px] font-semibold text-[#4f6484]">
+                {note.folder}
+              </span>
+            )}
+          </div>
+        </div>
+      </button>
+
+      <div className="flex items-center justify-end gap-1 border-t border-[#dde5f3] px-2 py-1.5">
+        {!isTrashView ? (
+          <>
+            <button
+              type="button"
+              className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded text-[#7b8ca7] transition hover:bg-[#e7edf9] hover:text-[#d08f11]"
+              onClick={() => onTogglePin(note.id)}
+            >
+              <FiStar />
+            </button>
+            <button
+              type="button"
+              className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded text-[#8b9ab1] transition hover:bg-[#e7edf9] hover:text-[#b9324b]"
+              onClick={() => onMoveNoteToTrash(note.id)}
+              title="Move to trash"
+            >
+              <FiArchive />
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              className="inline-flex h-7 cursor-pointer items-center gap-1 rounded bg-[#4f63f6] px-2 text-xs font-semibold text-white transition hover:bg-[#4158e8]"
+              onClick={() => onRestoreNote(note.id)}
+            >
+              <FiRotateCcw />
+              <span>Restore</span>
+            </button>
+            <button
+              type="button"
+              className="inline-flex h-7 cursor-pointer items-center gap-1 rounded bg-[#f3e4e9] px-2 text-xs font-semibold text-[#b72b46] transition hover:bg-[#f0d8df]"
+              onClick={() => onPermanentDeleteNote(note.id)}
+            >
+              <FiTrash2 />
+              <span>Delete</span>
+            </button>
+          </>
+        )}
+      </div>
+    </div>
   )
 }

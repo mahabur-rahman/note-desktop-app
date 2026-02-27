@@ -42,6 +42,7 @@ interface NotesApi {
 }
 
 type SaveState = 'saving' | 'saved' | 'error'
+type BackupExportFormat = 'json' | 'txt' | 'md' | 'pdf'
 
 const browserNotesStorageKey = 'online-notes:web-notes'
 const sidebarViewModeStorageKey = 'online-notes:sidebar-view-mode'
@@ -53,11 +54,14 @@ const editorFontSettingsStorageKey = 'online-notes:editor-font-settings'
 const selectedFolderStorageKey = 'online-notes:selected-folder-filter'
 const selectedTagsStorageKey = 'online-notes:selected-tag-filters'
 const trashViewStorageKey = 'online-notes:is-trash-view'
+const pinnedOnlyStorageKey = 'online-notes:pinned-only-filter'
 const appThemeStorageKey = 'online-notes:theme'
 const markdownPreviewStorageKey = 'online-notes:markdown-preview-enabled'
 const productionWebAppBaseUrl = 'https://onlinenotepad.org'
 const privacyPolicyPath = '/privacy'
 const shortcutsPath = '/keyboard-shortcuts'
+const backupMarkerStart = '---NOTENOVA_BACKUP_BEGIN---'
+const backupMarkerEnd = '---NOTENOVA_BACKUP_END---'
 
 const defaultEditorFontSettings: EditorFontSettings = {
   fontFamily: 'default',
@@ -66,6 +70,7 @@ const defaultEditorFontSettings: EditorFontSettings = {
   fontStyle: 'normal',
   lineHeight: 1.5
 }
+const minVersionSnapshotIntervalMs = 30 * 1000
 
 function generateNoteId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -104,10 +109,6 @@ function ensureTxtExtension(fileName: string): string {
   return fileName.toLowerCase().endsWith('.txt') ? fileName : `${fileName}.txt`
 }
 
-function ensureMdExtension(fileName: string): string {
-  return fileName.toLowerCase().endsWith('.md') ? fileName : `${fileName}.md`
-}
-
 function formatPrintTimestamp(date: Date): string {
   return date.toLocaleString('en-US', {
     month: 'numeric',
@@ -117,6 +118,76 @@ function formatPrintTimestamp(date: Date): string {
     minute: '2-digit',
     hour12: true
   })
+}
+
+function chunkText(rawValue: string, chunkSize: number): string[] {
+  const chunks: string[] = []
+  for (let index = 0; index < rawValue.length; index += chunkSize) {
+    chunks.push(rawValue.slice(index, index + chunkSize))
+  }
+  return chunks
+}
+
+function encodeBase64Utf8(rawValue: string): string {
+  const bytes = new TextEncoder().encode(rawValue)
+  let binary = ''
+  const chunkSize = 0x8000
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    binary += String.fromCharCode(...bytes.slice(index, index + chunkSize))
+  }
+  return btoa(binary)
+}
+
+function decodeBase64Utf8(rawValue: string): string {
+  const binary = atob(rawValue)
+  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0))
+  return new TextDecoder().decode(bytes)
+}
+
+function escapePdfText(rawValue: string): string {
+  return rawValue
+    .replace(/[^\x20-\x7E]/g, '?')
+    .replace(/\\/g, '\\\\')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)')
+}
+
+function createPdfDocument(lines: string[]): Uint8Array {
+  const streamCommands: string[] = ['BT', '/F1 10 Tf', '40 780 Td']
+
+  lines.forEach((line, index) => {
+    if (index > 0) streamCommands.push('0 -14 Td')
+    streamCommands.push(`(${escapePdfText(line)}) Tj`)
+  })
+
+  streamCommands.push('ET')
+  const contentStream = streamCommands.join('\n')
+
+  const objects = [
+    '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n',
+    '2 0 obj\n<< /Type /Pages /Count 1 /Kids [3 0 R] >>\nendobj\n',
+    '3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>\nendobj\n',
+    `4 0 obj\n<< /Length ${contentStream.length} >>\nstream\n${contentStream}\nendstream\nendobj\n`,
+    '5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>\nendobj\n'
+  ]
+
+  let pdfSource = '%PDF-1.4\n'
+  const offsets: number[] = [0]
+
+  objects.forEach((objectSource) => {
+    offsets.push(pdfSource.length)
+    pdfSource += objectSource
+  })
+
+  const xrefStart = pdfSource.length
+  pdfSource += `xref\n0 ${objects.length + 1}\n`
+  pdfSource += '0000000000 65535 f \n'
+  for (let index = 1; index <= objects.length; index += 1) {
+    pdfSource += `${String(offsets[index]).padStart(10, '0')} 00000 n \n`
+  }
+  pdfSource += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`
+
+  return new TextEncoder().encode(pdfSource)
 }
 
 function buildUrlFromBase(path: string, baseUrl: string): string {
@@ -198,8 +269,7 @@ function normalizeNotes(notes: Array<Partial<NoteSummary>>): NoteSummary[] {
       relativeTime: formatRelativeTime(updatedAt),
       createdAt,
       updatedAt,
-      folder:
-        typeof note.folder === 'string' && note.folder.trim().length > 0 ? note.folder : 'General',
+      folder: typeof note.folder === 'string' ? note.folder : '',
       tags: normalizeTagList(note.tags),
       isPinned: Boolean(note.isPinned),
       isDeleted: Boolean(note.isDeleted),
@@ -350,6 +420,14 @@ function loadTrashView(): boolean {
   }
 }
 
+function loadPinnedOnlyFilter(): boolean {
+  try {
+    return window.localStorage.getItem(pinnedOnlyStorageKey) === 'true'
+  } catch {
+    return false
+  }
+}
+
 function loadAppTheme(): AppTheme {
   try {
     const rawValue = window.localStorage.getItem(appThemeStorageKey)
@@ -368,8 +446,16 @@ function loadMarkdownPreviewEnabled(): boolean {
   }
 }
 
-function downloadNoteFile(fileName: string, content: string, mimeType: string): void {
-  const blob = new Blob([content], { type: mimeType })
+function downloadNoteFile(fileName: string, content: string | Uint8Array, mimeType: string): void {
+  const normalizedContent =
+    typeof content === 'string'
+      ? content
+      : (() => {
+          const arrayBuffer = new ArrayBuffer(content.byteLength)
+          new Uint8Array(arrayBuffer).set(content)
+          return arrayBuffer
+        })()
+  const blob = new Blob([normalizedContent], { type: mimeType })
   const downloadUrl = URL.createObjectURL(blob)
   const anchorElement = document.createElement('a')
   anchorElement.href = downloadUrl
@@ -393,6 +479,13 @@ function attachVersionSnapshot(note: NoteSummary, savedAt: number): NoteSummary 
   const latestVersion = note.versions[0]
   const nextSnapshot = createVersionSnapshot(note, savedAt)
 
+  if (latestVersion && savedAt - latestVersion.savedAt < minVersionSnapshotIntervalMs) {
+    return {
+      ...note,
+      versions: note.versions.slice(0, 50)
+    }
+  }
+
   if (
     latestVersion &&
     latestVersion.title === nextSnapshot.title &&
@@ -410,37 +503,119 @@ function attachVersionSnapshot(note: NoteSummary, savedAt: number): NoteSummary 
   }
 }
 
-function downloadPortableBackup(notes: NoteSummary[]): string {
-  const backupName = `notes-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.json`
-  downloadNoteFile(
-    backupName,
-    JSON.stringify(
-      {
-        createdAt: new Date().toISOString(),
-        count: notes.length,
-        notes
-      },
-      null,
-      2
-    ),
-    'application/json'
-  )
-  return backupName
+function buildBackupExportResource(
+  notes: NoteSummary[],
+  format: BackupExportFormat
+): { fileName: string; content: string | Uint8Array; mimeType: string } {
+  const payload = {
+    createdAt: new Date().toISOString(),
+    count: notes.length,
+    notes
+  }
+  const payloadJson = JSON.stringify(payload, null, 2)
+  const base64Payload = encodeBase64Utf8(payloadJson)
+  const encodedChunks = chunkText(base64Payload, 96)
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+
+  if (format === 'json') {
+    return {
+      fileName: `notes-backup-${timestamp}.json`,
+      content: payloadJson,
+      mimeType: 'application/json'
+    }
+  }
+
+  if (format === 'txt') {
+    const content = [
+      'NoteNova Studio Backup',
+      `Created: ${payload.createdAt}`,
+      `Total notes: ${payload.count}`,
+      'Import this file from Backup > Import backup in the app.',
+      '',
+      backupMarkerStart,
+      ...encodedChunks,
+      backupMarkerEnd
+    ].join('\n')
+    return {
+      fileName: `notes-backup-${timestamp}.txt`,
+      content,
+      mimeType: 'text/plain;charset=utf-8'
+    }
+  }
+
+  if (format === 'md') {
+    const content = [
+      '# NoteNova Studio Backup',
+      '',
+      `- Created: ${payload.createdAt}`,
+      `- Total notes: ${payload.count}`,
+      '',
+      '> Import this file from **Backup > Import backup** in NoteNova Studio.',
+      '',
+      backupMarkerStart,
+      ...encodedChunks,
+      backupMarkerEnd
+    ].join('\n')
+    return {
+      fileName: `notes-backup-${timestamp}.md`,
+      content,
+      mimeType: 'text/markdown;charset=utf-8'
+    }
+  }
+
+  const pdfLines = [
+    'NoteNova Studio Backup',
+    `Created: ${payload.createdAt}`,
+    `Total notes: ${payload.count}`,
+    'Import this file from Backup > Import backup in NoteNova Studio.',
+    backupMarkerStart,
+    ...encodedChunks,
+    backupMarkerEnd
+  ]
+
+  return {
+    fileName: `notes-backup-${timestamp}.pdf`,
+    content: createPdfDocument(pdfLines),
+    mimeType: 'application/pdf'
+  }
 }
 
 function parseBackupPayload(rawContent: string): NoteSummary[] {
-  const parsed = JSON.parse(rawContent) as unknown
+  const extractNotesFromJson = (rawText: string): NoteSummary[] => {
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(rawText) as unknown
+    } catch {
+      return []
+    }
 
-  if (Array.isArray(parsed)) {
-    return normalizeNotes(parsed as Array<Partial<NoteSummary>>)
+    if (Array.isArray(parsed)) {
+      return normalizeNotes(parsed as Array<Partial<NoteSummary>>)
+    }
+
+    if (typeof parsed === 'object' && parsed !== null && 'notes' in parsed) {
+      const payload = parsed as { notes?: Array<Partial<NoteSummary>> }
+      return normalizeNotes(payload.notes ?? [])
+    }
+
+    return []
   }
+  const directNotes = extractNotesFromJson(rawContent)
+  if (directNotes.length > 0) return directNotes
 
-  if (typeof parsed === 'object' && parsed !== null && 'notes' in parsed) {
-    const payload = parsed as { notes?: Array<Partial<NoteSummary>> }
-    return normalizeNotes(payload.notes ?? [])
+  const markerPattern = new RegExp(`${backupMarkerStart}([\\s\\S]*?)${backupMarkerEnd}`, 'm')
+  const markerMatch = rawContent.match(markerPattern)
+  if (!markerMatch) return []
+
+  const base64Payload = markerMatch[1].replace(/[^A-Za-z0-9+/=]/g, '')
+  if (!base64Payload) return []
+
+  try {
+    const decodedJson = decodeBase64Utf8(base64Payload)
+    return extractNotesFromJson(decodedJson)
+  } catch {
+    return []
   }
-
-  return []
 }
 
 function focusEditorWithCommand(command: string): void {
@@ -466,6 +641,7 @@ export function DesktopNotesLayout({
   const [selectedFolder, setSelectedFolder] = useState(loadSelectedFolder)
   const [selectedTags, setSelectedTags] = useState<string[]>(loadSelectedTags)
   const [isTrashView, setIsTrashView] = useState(loadTrashView)
+  const [isPinnedOnly, setIsPinnedOnly] = useState(loadPinnedOnlyFilter)
   const [appTheme, setAppTheme] = useState<AppTheme>(loadAppTheme)
   const [isMarkdownPreviewEnabled, setIsMarkdownPreviewEnabled] = useState(
     loadMarkdownPreviewEnabled
@@ -498,11 +674,10 @@ export function DesktopNotesLayout({
     notes
       .filter((note) => !note.isDeleted)
       .forEach((note) => {
-        const folder = note.folder || 'General'
+        const folder = note.folder.trim()
+        if (!folder) return
         folderCounts.set(folder, (folderCounts.get(folder) ?? 0) + 1)
       })
-
-    if (!folderCounts.has('General')) folderCounts.set('General', 0)
 
     return [...folderCounts.entries()]
       .map(([name, count]) => ({ name, count }))
@@ -526,17 +701,25 @@ export function DesktopNotesLayout({
 
   const filteredNotes = useMemo(() => {
     return scopedNotes.filter((note) => {
-      if (!isTrashView && selectedFolder !== 'all' && note.folder !== selectedFolder) return false
+      if (
+        !isTrashView &&
+        selectedFolder !== 'all' &&
+        note.folder !== selectedFolder &&
+        !note.folder.startsWith(`${selectedFolder}/`)
+      ) {
+        return false
+      }
       if (!isTrashView && selectedTags.length > 0) {
         const noteTagSet = new Set(note.tags)
         if (!selectedTags.every((tag) => noteTagSet.has(tag))) return false
       }
+      if (!isTrashView && isPinnedOnly && !note.isPinned) return false
 
       if (normalizedSearchQuery === '') return true
       const haystack = [note.title, note.content, note.folder, note.tags.join(' ')].join(' ')
       return haystack.toLocaleLowerCase().includes(normalizedSearchQuery)
     })
-  }, [isTrashView, normalizedSearchQuery, scopedNotes, selectedFolder, selectedTags])
+  }, [isPinnedOnly, isTrashView, normalizedSearchQuery, scopedNotes, selectedFolder, selectedTags])
 
   const sortedFilteredNotes = useMemo(() => {
     return [...filteredNotes].sort((firstNote, secondNote) => {
@@ -641,6 +824,7 @@ export function DesktopNotesLayout({
       window.localStorage.setItem(selectedFolderStorageKey, selectedFolder)
       window.localStorage.setItem(selectedTagsStorageKey, JSON.stringify(selectedTags))
       window.localStorage.setItem(trashViewStorageKey, String(isTrashView))
+      window.localStorage.setItem(pinnedOnlyStorageKey, String(isPinnedOnly))
       window.localStorage.setItem(appThemeStorageKey, appTheme)
       window.localStorage.setItem(markdownPreviewStorageKey, String(isMarkdownPreviewEnabled))
     } catch {
@@ -653,6 +837,7 @@ export function DesktopNotesLayout({
     isSpellCheckEnabled,
     isStatusBarVisible,
     isTrashView,
+    isPinnedOnly,
     isWordWrapEnabled,
     selectedFolder,
     selectedTags,
@@ -799,7 +984,7 @@ export function DesktopNotesLayout({
 
   const handleChangeActiveNoteFolder = (folder: string): void => {
     if (!activeNote || activeNote.isDeleted) return
-    const normalizedFolder = folder.trim() || 'General'
+    const normalizedFolder = folder.trim()
     const now = Date.now()
 
     updateNoteById(activeNote.id, (note) => ({
@@ -944,7 +1129,7 @@ export function DesktopNotesLayout({
                 relativeTime: 'just now',
                 createdAt: now,
                 updatedAt: now,
-                folder: selectedFolder === 'all' ? 'General' : selectedFolder,
+                folder: selectedFolder === 'all' ? '' : selectedFolder,
                 tags: [],
                 isPinned: false,
                 isDeleted: false,
@@ -1005,7 +1190,7 @@ export function DesktopNotesLayout({
             relativeTime: 'just now',
             createdAt: now,
             updatedAt: now,
-            folder: selectedFolder === 'all' ? 'General' : selectedFolder,
+            folder: selectedFolder === 'all' ? '' : selectedFolder,
             tags: [],
             isPinned: false,
             isDeleted: false,
@@ -1072,10 +1257,10 @@ export function DesktopNotesLayout({
   const handleFileExportMarkdown = (): void => {
     if (!activeNote) return
 
-    const fileName = ensureMdExtension(
+    const fileName = ensureTxtExtension(
       sanitizeDownloadFileName(activeNote.title || 'Untitled Note')
     )
-    downloadNoteFile(fileName, activeNote.content, 'text/markdown;charset=utf-8')
+    downloadNoteFile(fileName, activeNote.content, 'text/plain;charset=utf-8')
   }
 
   const handleFileExportPdf = (): void => {
@@ -1183,14 +1368,28 @@ export function DesktopNotesLayout({
   }
 
   const handleBackupNotes = (): void => {
-    const backupName = downloadPortableBackup(notes)
-    window.alert(`Backup exported as ${backupName}`)
+    const rawFormat = window
+      .prompt('Choose backup format: json, txt, md, pdf', 'json')
+      ?.trim()
+      .toLowerCase()
+
+    if (!rawFormat) return
+    if (!['json', 'txt', 'md', 'pdf'].includes(rawFormat)) {
+      window.alert('Invalid format. Use one of: json, txt, md, pdf')
+      return
+    }
+
+    const format = rawFormat as BackupExportFormat
+    const backupResource = buildBackupExportResource(notes, format)
+    downloadNoteFile(backupResource.fileName, backupResource.content, backupResource.mimeType)
+    window.alert(`Backup exported as ${backupResource.fileName}`)
   }
 
   const handleImportBackupNotes = (): void => {
     const fileInput = document.createElement('input')
     fileInput.type = 'file'
-    fileInput.accept = '.json,application/json'
+    fileInput.accept =
+      '.json,.txt,.md,.pdf,application/json,text/plain,text/markdown,application/pdf'
 
     fileInput.onchange = () => {
       const selectedFile = fileInput.files?.[0]
@@ -1382,9 +1581,9 @@ export function DesktopNotesLayout({
     },
     {
       id: 'save-md',
-      title: 'Export markdown',
-      subtitle: 'Export active note as .md',
-      keywords: ['markdown', 'md', 'export'],
+      title: 'Export TXT',
+      subtitle: 'Export active note as .txt',
+      keywords: ['text', 'txt', 'export'],
       onSelect: handleFileExportMarkdown
     },
     {
@@ -1393,6 +1592,20 @@ export function DesktopNotesLayout({
       subtitle: 'Open print dialog with clean print theme',
       keywords: ['print', 'pdf'],
       onSelect: handleFilePrint
+    },
+    {
+      id: 'export-backup',
+      title: 'Export backup',
+      subtitle: 'Create portable JSON backup file',
+      keywords: ['backup', 'export', 'sync'],
+      onSelect: handleBackupNotes
+    },
+    {
+      id: 'import-backup',
+      title: 'Import backup',
+      subtitle: 'Restore notes from backup JSON file',
+      keywords: ['backup', 'import', 'restore'],
+      onSelect: handleImportBackupNotes
     },
     {
       id: 'find-replace',
@@ -1407,6 +1620,20 @@ export function DesktopNotesLayout({
       subtitle: 'Enable or disable wrapping',
       keywords: ['wrap', 'line', 'format'],
       onSelect: () => setIsWordWrapEnabled((prev) => !prev)
+    },
+    {
+      id: 'toggle-pinned-filter',
+      title: isPinnedOnly ? 'Show all notes' : 'Show pinned only',
+      subtitle: 'Quick filter for priority notes',
+      keywords: ['pinned', 'favorite', 'star'],
+      onSelect: () => setIsPinnedOnly((prev) => !prev)
+    },
+    {
+      id: 'toggle-trash-view',
+      title: isTrashView ? 'Switch to notes view' : 'Switch to trash view',
+      subtitle: 'Jump between active notes and recycle bin',
+      keywords: ['trash', 'recycle', 'deleted'],
+      onSelect: () => setIsTrashView((prev) => !prev)
     },
     {
       id: 'toggle-markdown-preview',
@@ -1442,6 +1669,13 @@ export function DesktopNotesLayout({
       subtitle: 'See available productivity shortcuts',
       keywords: ['help', 'shortcut', 'keyboard'],
       onSelect: handleOpenShortcutsPage
+    },
+    {
+      id: 'open-version-history',
+      title: 'Open version history',
+      subtitle: 'Restore previous content snapshots',
+      keywords: ['history', 'version', 'restore'],
+      onSelect: () => setIsVersionHistoryOpen(true)
     }
   ]
 
@@ -1515,10 +1749,13 @@ export function DesktopNotesLayout({
               setIsTrashView(value)
               setSelectedFolder('all')
               setSelectedTags([])
+              setIsPinnedOnly(false)
             }}
             availableFolders={availableFolders}
             selectedFolder={selectedFolder}
             onSelectFolder={setSelectedFolder}
+            isPinnedOnly={isPinnedOnly}
+            onTogglePinnedOnly={() => setIsPinnedOnly((prev) => !prev)}
             availableTags={availableTags}
             selectedTags={selectedTags}
             onToggleTag={(tag) => {
@@ -1565,6 +1802,7 @@ export function DesktopNotesLayout({
             onHelpShortcuts={handleOpenShortcutsPage}
             onHelpPrivacy={handleOpenPrivacyPage}
             onHelpAbout={handleOpenAboutModal}
+            noteId={activeNote?.id ?? null}
             noteTitle={activeNote?.title ?? null}
             noteContent={activeNote?.content ?? null}
             noteFolder={activeNote?.folder ?? null}

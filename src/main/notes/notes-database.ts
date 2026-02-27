@@ -122,7 +122,7 @@ export function openNotesDatabase(app: App): NotesDatabase {
     relativeTime: typeof row.relativeTime === 'string' ? row.relativeTime : 'just now',
     createdAt: typeof row.createdAt === 'number' ? row.createdAt : Date.now(),
     updatedAt: typeof row.updatedAt === 'number' ? row.updatedAt : Date.now(),
-    folder: typeof row.folder === 'string' && row.folder.trim().length > 0 ? row.folder : 'General',
+    folder: typeof row.folder === 'string' ? row.folder : '',
     tags: parseStringArray(row.tagsJson),
     isPinned: Number(row.isPinned) === 1,
     isDeleted: Number(row.isDeleted) === 1,
@@ -225,7 +225,7 @@ export function openNotesDatabase(app: App): NotesDatabase {
         relativeTime: 'just now',
         createdAt: now,
         updatedAt: now,
-        folder: 'General',
+        folder: '',
         tags: [],
         isPinned: false,
         isDeleted: false,
@@ -270,9 +270,11 @@ export function openNotesDatabase(app: App): NotesDatabase {
       const title = typeof payload.title === 'string' ? payload.title.trim() : ''
       const content = typeof payload.content === 'string' ? payload.content : ''
       const folder =
-        typeof payload.folder === 'string' && payload.folder.trim().length > 0
+        typeof payload.folder === 'string'
           ? payload.folder.trim()
-          : existingTimestamps.folder || 'General'
+          : typeof existingTimestamps.folder === 'string'
+            ? existingTimestamps.folder
+            : ''
       const tags = Array.isArray(payload.tags)
         ? payload.tags.filter(
             (tag): tag is string => typeof tag === 'string' && tag.trim().length > 0
