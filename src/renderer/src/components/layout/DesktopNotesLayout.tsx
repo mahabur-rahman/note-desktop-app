@@ -53,6 +53,7 @@ const editorFontSettingsStorageKey = 'online-notes:editor-font-settings'
 const selectedFolderStorageKey = 'online-notes:selected-folder-filter'
 const selectedTagsStorageKey = 'online-notes:selected-tag-filters'
 const trashViewStorageKey = 'online-notes:is-trash-view'
+const pinnedOnlyStorageKey = 'online-notes:pinned-only-filter'
 const appThemeStorageKey = 'online-notes:theme'
 const markdownPreviewStorageKey = 'online-notes:markdown-preview-enabled'
 const productionWebAppBaseUrl = 'https://onlinenotepad.org'
@@ -66,6 +67,7 @@ const defaultEditorFontSettings: EditorFontSettings = {
   fontStyle: 'normal',
   lineHeight: 1.5
 }
+const minVersionSnapshotIntervalMs = 30 * 1000
 
 function generateNoteId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -350,6 +352,14 @@ function loadTrashView(): boolean {
   }
 }
 
+function loadPinnedOnlyFilter(): boolean {
+  try {
+    return window.localStorage.getItem(pinnedOnlyStorageKey) === 'true'
+  } catch {
+    return false
+  }
+}
+
 function loadAppTheme(): AppTheme {
   try {
     const rawValue = window.localStorage.getItem(appThemeStorageKey)
@@ -392,6 +402,13 @@ function createVersionSnapshot(note: NoteSummary, savedAt: number): NoteVersionR
 function attachVersionSnapshot(note: NoteSummary, savedAt: number): NoteSummary {
   const latestVersion = note.versions[0]
   const nextSnapshot = createVersionSnapshot(note, savedAt)
+
+  if (latestVersion && savedAt - latestVersion.savedAt < minVersionSnapshotIntervalMs) {
+    return {
+      ...note,
+      versions: note.versions.slice(0, 50)
+    }
+  }
 
   if (
     latestVersion &&
@@ -466,6 +483,7 @@ export function DesktopNotesLayout({
   const [selectedFolder, setSelectedFolder] = useState(loadSelectedFolder)
   const [selectedTags, setSelectedTags] = useState<string[]>(loadSelectedTags)
   const [isTrashView, setIsTrashView] = useState(loadTrashView)
+  const [isPinnedOnly, setIsPinnedOnly] = useState(loadPinnedOnlyFilter)
   const [appTheme, setAppTheme] = useState<AppTheme>(loadAppTheme)
   const [isMarkdownPreviewEnabled, setIsMarkdownPreviewEnabled] = useState(
     loadMarkdownPreviewEnabled
@@ -526,17 +544,25 @@ export function DesktopNotesLayout({
 
   const filteredNotes = useMemo(() => {
     return scopedNotes.filter((note) => {
-      if (!isTrashView && selectedFolder !== 'all' && note.folder !== selectedFolder) return false
+      if (
+        !isTrashView &&
+        selectedFolder !== 'all' &&
+        note.folder !== selectedFolder &&
+        !note.folder.startsWith(`${selectedFolder}/`)
+      ) {
+        return false
+      }
       if (!isTrashView && selectedTags.length > 0) {
         const noteTagSet = new Set(note.tags)
         if (!selectedTags.every((tag) => noteTagSet.has(tag))) return false
       }
+      if (!isTrashView && isPinnedOnly && !note.isPinned) return false
 
       if (normalizedSearchQuery === '') return true
       const haystack = [note.title, note.content, note.folder, note.tags.join(' ')].join(' ')
       return haystack.toLocaleLowerCase().includes(normalizedSearchQuery)
     })
-  }, [isTrashView, normalizedSearchQuery, scopedNotes, selectedFolder, selectedTags])
+  }, [isPinnedOnly, isTrashView, normalizedSearchQuery, scopedNotes, selectedFolder, selectedTags])
 
   const sortedFilteredNotes = useMemo(() => {
     return [...filteredNotes].sort((firstNote, secondNote) => {
@@ -641,6 +667,7 @@ export function DesktopNotesLayout({
       window.localStorage.setItem(selectedFolderStorageKey, selectedFolder)
       window.localStorage.setItem(selectedTagsStorageKey, JSON.stringify(selectedTags))
       window.localStorage.setItem(trashViewStorageKey, String(isTrashView))
+      window.localStorage.setItem(pinnedOnlyStorageKey, String(isPinnedOnly))
       window.localStorage.setItem(appThemeStorageKey, appTheme)
       window.localStorage.setItem(markdownPreviewStorageKey, String(isMarkdownPreviewEnabled))
     } catch {
@@ -653,6 +680,7 @@ export function DesktopNotesLayout({
     isSpellCheckEnabled,
     isStatusBarVisible,
     isTrashView,
+    isPinnedOnly,
     isWordWrapEnabled,
     selectedFolder,
     selectedTags,
@@ -1395,6 +1423,20 @@ export function DesktopNotesLayout({
       onSelect: handleFilePrint
     },
     {
+      id: 'export-backup',
+      title: 'Export backup',
+      subtitle: 'Create portable JSON backup file',
+      keywords: ['backup', 'export', 'sync'],
+      onSelect: handleBackupNotes
+    },
+    {
+      id: 'import-backup',
+      title: 'Import backup',
+      subtitle: 'Restore notes from backup JSON file',
+      keywords: ['backup', 'import', 'restore'],
+      onSelect: handleImportBackupNotes
+    },
+    {
       id: 'find-replace',
       title: 'Find and replace',
       subtitle: 'Open find & replace modal',
@@ -1407,6 +1449,20 @@ export function DesktopNotesLayout({
       subtitle: 'Enable or disable wrapping',
       keywords: ['wrap', 'line', 'format'],
       onSelect: () => setIsWordWrapEnabled((prev) => !prev)
+    },
+    {
+      id: 'toggle-pinned-filter',
+      title: isPinnedOnly ? 'Show all notes' : 'Show pinned only',
+      subtitle: 'Quick filter for priority notes',
+      keywords: ['pinned', 'favorite', 'star'],
+      onSelect: () => setIsPinnedOnly((prev) => !prev)
+    },
+    {
+      id: 'toggle-trash-view',
+      title: isTrashView ? 'Switch to notes view' : 'Switch to trash view',
+      subtitle: 'Jump between active notes and recycle bin',
+      keywords: ['trash', 'recycle', 'deleted'],
+      onSelect: () => setIsTrashView((prev) => !prev)
     },
     {
       id: 'toggle-markdown-preview',
@@ -1442,6 +1498,13 @@ export function DesktopNotesLayout({
       subtitle: 'See available productivity shortcuts',
       keywords: ['help', 'shortcut', 'keyboard'],
       onSelect: handleOpenShortcutsPage
+    },
+    {
+      id: 'open-version-history',
+      title: 'Open version history',
+      subtitle: 'Restore previous content snapshots',
+      keywords: ['history', 'version', 'restore'],
+      onSelect: () => setIsVersionHistoryOpen(true)
     }
   ]
 
@@ -1515,10 +1578,13 @@ export function DesktopNotesLayout({
               setIsTrashView(value)
               setSelectedFolder('all')
               setSelectedTags([])
+              setIsPinnedOnly(false)
             }}
             availableFolders={availableFolders}
             selectedFolder={selectedFolder}
             onSelectFolder={setSelectedFolder}
+            isPinnedOnly={isPinnedOnly}
+            onTogglePinnedOnly={() => setIsPinnedOnly((prev) => !prev)}
             availableTags={availableTags}
             selectedTags={selectedTags}
             onToggleTag={(tag) => {
