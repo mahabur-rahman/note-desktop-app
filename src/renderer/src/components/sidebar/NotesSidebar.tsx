@@ -288,11 +288,9 @@ export function NotesSidebar({
                             ? 'border-[#4d63f6] bg-[#4d63f6] text-white'
                             : 'border-[#cfd9ec] bg-white text-[#466082] hover:bg-[#edf2fd]'
                         ].join(' ')}
+                        title={`${tag.count} note${tag.count > 1 ? 's' : ''}`}
                       >
                         <span>{tag.name}</span>
-                        <span className={isSelected ? 'text-[#dbe3ff]' : 'text-[#7a8eab]'}>
-                          {tag.count}
-                        </span>
                       </button>
                     )
                   })}

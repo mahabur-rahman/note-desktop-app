@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FiClock, FiRotateCcw, FiStar, FiTrash2, FiX } from 'react-icons/fi'
 import { IconButton } from '../common/IconButton'
 
@@ -19,10 +19,14 @@ interface NoteTitleRowProps {
   onOpenVersionHistory: () => void
 }
 
+function normalizeTag(rawValue: string): string {
+  return rawValue.trim().replace(/\s+/g, ' ')
+}
+
 function parseTagTokens(rawValue: string): string[] {
   return rawValue
     .split(/[,\n;]+/)
-    .map((tag) => tag.trim())
+    .map((tag) => normalizeTag(tag))
     .filter((tag) => tag.length > 0)
 }
 
@@ -58,11 +62,27 @@ export function NoteTitleRow({
 }: NoteTitleRowProps): React.JSX.Element {
   const hasNote = title !== null
   const [tagDraft, setTagDraft] = useState('')
+  const [localTags, setLocalTags] = useState(tags)
 
-  const commitDraftTags = (rawValue: string): void => {
+  useEffect(() => {
+    setLocalTags(tags)
+  }, [tags])
+
+  const applyNextTags = (nextTags: string[]): void => {
+    setLocalTags(nextTags)
+    onChangeTags(nextTags)
+  }
+
+  const commitSingleTag = (rawValue: string): void => {
+    const normalizedTag = normalizeTag(rawValue)
+    if (!normalizedTag) return
+    applyNextTags(mergeTags(localTags, [normalizedTag]))
+  }
+
+  const commitBulkTags = (rawValue: string): void => {
     const incomingTags = parseTagTokens(rawValue)
     if (incomingTags.length === 0) return
-    onChangeTags(mergeTags(tags, incomingTags))
+    applyNextTags(mergeTags(localTags, incomingTags))
   }
 
   return (
@@ -150,7 +170,7 @@ export function NoteTitleRow({
           <span>Tags</span>
           <div>
             <div className="mb-1.5 flex flex-wrap gap-1">
-              {tags.map((tag, tagIndex) => (
+              {localTags.map((tag, tagIndex) => (
                 <span
                   key={`${tag}-${tagIndex}`}
                   className="inline-flex items-center gap-1 rounded-full border border-[#cfdaf0] bg-[#eaf0ff] px-2 py-0.5 text-xs font-semibold text-[#3a557c]"
@@ -163,7 +183,7 @@ export function NoteTitleRow({
                       onClick={(event) => {
                         event.preventDefault()
                         event.stopPropagation()
-                        onChangeTags(tags.filter((_, index) => index !== tagIndex))
+                        applyNextTags(localTags.filter((_, index) => index !== tagIndex))
                       }}
                     >
                       <FiX className="text-[10px]" />
@@ -179,26 +199,30 @@ export function NoteTitleRow({
               disabled={!hasNote || isDeleted}
               onChange={(event) => setTagDraft(event.target.value)}
               onBlur={() => {
-                commitDraftTags(tagDraft)
+                commitSingleTag(tagDraft)
                 setTagDraft('')
               }}
               onKeyDown={(event) => {
-                if (event.key === 'Backspace' && tagDraft.trim().length === 0 && tags.length > 0) {
+                if (
+                  event.key === 'Backspace' &&
+                  tagDraft.trim().length === 0 &&
+                  localTags.length > 0
+                ) {
                   event.preventDefault()
-                  onChangeTags(tags.slice(0, -1))
+                  applyNextTags(localTags.slice(0, -1))
                   return
                 }
 
-                if (!['Enter', ',', ';'].includes(event.key)) return
+                if (event.key !== 'Enter') return
                 event.preventDefault()
-                commitDraftTags(tagDraft)
+                commitSingleTag(tagDraft)
                 setTagDraft('')
               }}
               onPaste={(event) => {
                 const pastedText = event.clipboardData.getData('text')
                 if (!pastedText) return
                 event.preventDefault()
-                commitDraftTags(pastedText)
+                commitBulkTags(pastedText)
               }}
               placeholder="Type tag then press Enter"
               className={[
