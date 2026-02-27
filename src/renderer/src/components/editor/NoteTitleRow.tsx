@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { FiClock, FiRotateCcw, FiStar, FiTrash2 } from 'react-icons/fi'
 import { IconButton } from '../common/IconButton'
 
@@ -21,7 +22,7 @@ interface NoteTitleRowProps {
 function parseTags(rawValue: string): string[] {
   const uniqueTags = new Set<string>()
   rawValue
-    .split(',')
+    .split(/[,\n;]+/)
     .map((tag) => tag.trim())
     .filter((tag) => tag.length > 0)
     .forEach((tag) => uniqueTags.add(tag))
@@ -46,6 +47,7 @@ export function NoteTitleRow({
   onOpenVersionHistory
 }: NoteTitleRowProps): React.JSX.Element {
   const hasNote = title !== null
+  const [tagInputValue, setTagInputValue] = useState(tags.join(', '))
 
   return (
     <div className="border-b border-[#d7dfef] bg-[#f8faff]">
@@ -132,9 +134,25 @@ export function NoteTitleRow({
           <span>Tags</span>
           <input
             type="text"
-            value={tags.join(', ')}
+            value={tagInputValue}
             disabled={!hasNote || isDeleted}
-            onChange={(event) => onChangeTags(parseTags(event.target.value))}
+            onChange={(event) => {
+              const rawValue = event.target.value
+              setTagInputValue(rawValue)
+              onChangeTags(parseTags(rawValue))
+            }}
+            onBlur={() => {
+              const normalizedValue = parseTags(tagInputValue).join(', ')
+              setTagInputValue(normalizedValue)
+              onChangeTags(parseTags(normalizedValue))
+            }}
+            onKeyDown={(event) => {
+              if (event.key !== 'Enter') return
+              event.preventDefault()
+              const normalizedValue = parseTags(tagInputValue).join(', ')
+              setTagInputValue(normalizedValue)
+              onChangeTags(parseTags(normalizedValue))
+            }}
             placeholder="work, ideas, project"
             className={[
               'h-8 rounded border border-[#cdd8ec] bg-white px-2 text-[13px] text-[#304564] outline-none focus:border-[#9bb0d7]',

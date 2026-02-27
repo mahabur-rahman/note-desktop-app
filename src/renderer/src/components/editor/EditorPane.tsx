@@ -23,6 +23,7 @@ interface EditorPaneProps {
   onHelpShortcuts: () => void
   onHelpPrivacy: () => void
   onHelpAbout: () => void
+  noteId: string | null
   noteTitle: string | null
   noteContent: string | null
   noteFolder: string | null
@@ -186,6 +187,7 @@ export function EditorPane({
   onHelpShortcuts,
   onHelpPrivacy,
   onHelpAbout,
+  noteId,
   noteTitle,
   noteContent,
   noteFolder,
@@ -760,6 +762,7 @@ export function EditorPane({
           onOpenCommandPalette={onOpenCommandPalette}
         />
         <NoteTitleRow
+          key={noteId ?? 'empty-note'}
           title={noteTitle}
           folder={noteFolder}
           tags={noteTags}
