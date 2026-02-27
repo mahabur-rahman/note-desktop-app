@@ -70,7 +70,7 @@ const defaultEditorFontSettings: EditorFontSettings = {
   fontStyle: 'normal',
   lineHeight: 1.5
 }
-const minVersionSnapshotIntervalMs = 30 * 1000
+const minVersionSnapshotIntervalMs = 1 * 1000
 
 function generateNoteId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
