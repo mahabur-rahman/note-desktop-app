@@ -1,5 +1,5 @@
 import type { App } from 'electron'
-import { BrowserWindow, nativeImage } from 'electron'
+import { app, BrowserWindow, nativeImage } from 'electron'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
@@ -33,7 +33,9 @@ export function createMainWindow({
   defaultSize,
   minimumSize
 }: MainWindowOptions): BrowserWindow {
-  const shouldOpenDevTools = is.dev && process.env['OPEN_DEVTOOLS'] !== '0'
+  const isDevelopment = !app.isPackaged && is.dev
+  const isDevToolsEnabled = isDevelopment
+  const shouldOpenDevTools = isDevToolsEnabled && process.env['OPEN_DEVTOOLS'] !== '0'
   const mainWindow = new BrowserWindow({
     width: defaultSize.width,
     height: defaultSize.height,
@@ -43,7 +45,8 @@ export function createMainWindow({
     icon: iconPath,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      sandbox: false,
+      devTools: isDevToolsEnabled
     }
   })
 
@@ -61,6 +64,16 @@ export function createMainWindow({
 
   if (shouldOpenDevTools) {
     mainWindow.webContents.openDevTools()
+  }
+
+  if (!isDevToolsEnabled) {
+    mainWindow.webContents.on('before-input-event', (event, input) => {
+      const key = input.key.toLowerCase()
+      const isDevToolsShortcut =
+        key === 'f12' || ((input.control || input.meta) && input.shift && key === 'i')
+      if (!isDevToolsShortcut) return
+      event.preventDefault()
+    })
   }
 
   mainWindow.webContents.on('console-message', (event, _level, message, _line, sourceId) => {
