@@ -592,7 +592,7 @@ function NoteCard({
             >
               {note.relativeTime}
             </span>
-            {!isTrashView && (
+            {!isTrashView && note.folder.trim().length > 0 && (
               <span className="rounded-full bg-[#e9effc] px-2 py-0.5 text-[11px] font-semibold text-[#4f6484]">
                 {note.folder}
               </span>

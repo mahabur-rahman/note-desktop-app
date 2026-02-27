@@ -112,9 +112,10 @@ export function NoteTitleRow({
           <span>Folder</span>
           <input
             list="note-folder-options"
-            value={folder ?? 'General'}
+            value={folder ?? ''}
             disabled={!hasNote || isDeleted}
             onChange={(event) => onChangeFolder(event.target.value)}
+            placeholder="Optional"
             className={[
               'h-8 rounded border border-[#cdd8ec] bg-white px-2 text-[13px] text-[#304564] outline-none focus:border-[#9bb0d7]',
               !hasNote || isDeleted ? 'cursor-not-allowed opacity-70' : 'cursor-text'

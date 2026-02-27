@@ -200,8 +200,7 @@ function normalizeNotes(notes: Array<Partial<NoteSummary>>): NoteSummary[] {
       relativeTime: formatRelativeTime(updatedAt),
       createdAt,
       updatedAt,
-      folder:
-        typeof note.folder === 'string' && note.folder.trim().length > 0 ? note.folder : 'General',
+      folder: typeof note.folder === 'string' ? note.folder : '',
       tags: normalizeTagList(note.tags),
       isPinned: Boolean(note.isPinned),
       isDeleted: Boolean(note.isDeleted),
@@ -516,11 +515,10 @@ export function DesktopNotesLayout({
     notes
       .filter((note) => !note.isDeleted)
       .forEach((note) => {
-        const folder = note.folder || 'General'
+        const folder = note.folder.trim()
+        if (!folder) return
         folderCounts.set(folder, (folderCounts.get(folder) ?? 0) + 1)
       })
-
-    if (!folderCounts.has('General')) folderCounts.set('General', 0)
 
     return [...folderCounts.entries()]
       .map(([name, count]) => ({ name, count }))
@@ -827,7 +825,7 @@ export function DesktopNotesLayout({
 
   const handleChangeActiveNoteFolder = (folder: string): void => {
     if (!activeNote || activeNote.isDeleted) return
-    const normalizedFolder = folder.trim() || 'General'
+    const normalizedFolder = folder.trim()
     const now = Date.now()
 
     updateNoteById(activeNote.id, (note) => ({
@@ -972,7 +970,7 @@ export function DesktopNotesLayout({
                 relativeTime: 'just now',
                 createdAt: now,
                 updatedAt: now,
-                folder: selectedFolder === 'all' ? 'General' : selectedFolder,
+                folder: selectedFolder === 'all' ? '' : selectedFolder,
                 tags: [],
                 isPinned: false,
                 isDeleted: false,
@@ -1033,7 +1031,7 @@ export function DesktopNotesLayout({
             relativeTime: 'just now',
             createdAt: now,
             updatedAt: now,
-            folder: selectedFolder === 'all' ? 'General' : selectedFolder,
+            folder: selectedFolder === 'all' ? '' : selectedFolder,
             tags: [],
             isPinned: false,
             isDeleted: false,
