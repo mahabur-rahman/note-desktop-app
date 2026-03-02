@@ -83,11 +83,11 @@ function App(): React.JSX.Element {
     return <PrivacyPolicyPage />
   }
 
-  if (activePath === '/app') {
+  if (isDesktopApp) {
     return <DesktopNotesLayout appTitle={APP_TITLE} menuItems={MENU_ITEMS} />
   }
 
-  if (isDesktopApp && (activePath === '/' || activePath === '/index.html')) {
+  if (activePath === '/app') {
     return <DesktopNotesLayout appTitle={APP_TITLE} menuItems={MENU_ITEMS} />
   }
 
