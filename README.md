@@ -166,6 +166,28 @@ npx serve out/renderer
 
 Then open the printed local URL in browser.
 
+## 6.4 Landing page download button local test
+
+For local testing, three download buttons are wired in landing page:
+
+1. `Download for Windows` -> `/downloads/notenova-windows.exe`
+2. `Download for Linux` -> `/downloads/notenova-linux.AppImage`
+3. `Download for macOS` -> `/downloads/notenova-macos.dmg`
+
+Mock files are stored in:
+
+1. `src/renderer/public/downloads/notenova-windows.exe`
+2. `src/renderer/public/downloads/notenova-linux.AppImage`
+3. `src/renderer/public/downloads/notenova-macos.dmg`
+
+To test:
+
+```bash
+npm run dev
+```
+
+Open landing page, click each button, and verify download starts.
+
 ## 7. Script Reference
 
 1. `npm run dev` -> Electron development mode

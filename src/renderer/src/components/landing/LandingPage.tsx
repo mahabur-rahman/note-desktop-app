@@ -123,6 +123,36 @@ export function LandingPage(): React.JSX.Element {
               </a>
             </div>
 
+            <div className="mt-6 rounded-xl border border-[#c5d5f5] bg-white/80 p-4">
+              <p className="text-sm font-semibold text-[#2e466f]">Desktop Downloads</p>
+              <p className="mt-1 text-xs text-[#5b7397]">
+                Local test links. Replace these files with real installers in production.
+              </p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                <a
+                  href="/downloads/notenova-windows.exe"
+                  download
+                  className="inline-flex items-center justify-center rounded-md bg-[#2f5792] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#284c7f]"
+                >
+                  Download for Windows
+                </a>
+                <a
+                  href="/downloads/notenova-linux.AppImage"
+                  download
+                  className="inline-flex items-center justify-center rounded-md bg-[#2f5792] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#284c7f]"
+                >
+                  Download for Linux
+                </a>
+                <a
+                  href="/downloads/notenova-macos.dmg"
+                  download
+                  className="inline-flex items-center justify-center rounded-md bg-[#2f5792] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#284c7f]"
+                >
+                  Download for macOS
+                </a>
+              </div>
+            </div>
+
             <div className="mt-8 grid gap-2 sm:grid-cols-2">
               {featureHighlights.map((item) => (
                 <p

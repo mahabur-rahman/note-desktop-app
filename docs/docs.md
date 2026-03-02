@@ -623,7 +623,11 @@ Landing (`/`):
 1. Professional hero + CTA
 2. Live iframe preview of `/app`
 3. Overview, workflow, compatibility sections
-4. Footer links to app/shortcuts/privacy
+4. Desktop download buttons for:
+   - Windows (`/downloads/notenova-windows.exe`)
+   - Linux (`/downloads/notenova-linux.AppImage`)
+   - macOS (`/downloads/notenova-macos.dmg`)
+5. Footer links to app/shortcuts/privacy
 
 Shortcuts page:
 
