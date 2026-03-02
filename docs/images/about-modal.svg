@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-label="Placeholder diagram">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f1b33"/>
+      <stop offset="100%" stop-color="#224d8e"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#bg)"/>
+  <rect x="90" y="90" width="1100" height="540" rx="24" fill="#f8fbff" opacity="0.95"/>
+  <text x="640" y="290" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="54" fill="#1f3b62" font-weight="700">PLACEHOLDER</text>
+  <text x="640" y="360" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="30" fill="#2f527f">Replace with real module screenshot</text>
+  <text x="640" y="430" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="24" fill="#496a95">File: about-modal.svg</text>
+</svg>
