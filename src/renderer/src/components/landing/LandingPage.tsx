@@ -164,19 +164,18 @@ export function LandingPage(): React.JSX.Element {
           <div className="rounded-2xl border border-[#ccdaf8] bg-white p-4 shadow-[0_20px_45px_rgba(21,39,72,0.14)]">
             <div className="mb-3 flex items-center justify-between px-1">
               <p className="text-xs font-semibold tracking-[0.1em] text-[#3d547a] uppercase">
-                Cross-Platform Workspace
+                Desktop-First Workspace
               </p>
               <span className="rounded bg-[#e5ecff] px-2 py-1 text-[11px] font-semibold text-[#3456cd]">
-                Web + Windows / Linux / macOS
+                Windows / Linux / macOS
               </span>
             </div>
             <div className="rounded-xl border border-[#d4e0f6] bg-[linear-gradient(180deg,#f7f9ff_0%,#eef3ff_100%)] p-5">
               <p className="text-sm leading-7 text-[#3f567b]">
-                You can open the full editor in browser at /app or install NoteNova on your local
-                machine for desktop workflow.
+                The full editor experience is available in the desktop build. Use the download
+                buttons to install NoteNova on your local machine.
               </p>
               <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-[#4b6286]">
-                <li>Instant usage in browser without installation</li>
                 <li>Rich note editing with keyboard shortcuts</li>
                 <li>Folder/tag organization with fast filtering</li>
                 <li>Autosave, version restore, export and print</li>
