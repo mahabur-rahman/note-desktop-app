@@ -31,7 +31,10 @@ const workflowSteps = [
 ] as const
 
 const compatibilityRows = [
-  { platform: 'Web', details: 'Works on modern browsers with route-based pages and SEO metadata.' },
+  {
+    platform: 'Web',
+    details: 'Full editor workspace is available in browser via /app, with direct installer downloads.'
+  },
   {
     platform: 'Desktop',
     details: 'Electron app for Linux, macOS, and Windows with native window-level controls.'
@@ -72,18 +75,15 @@ export function LandingPage(): React.JSX.Element {
             <a href="#compatibility" className="transition hover:text-white">
               Compatibility
             </a>
-            <a
-              href="/app"
-              className="rounded-md bg-[#4b64f5] px-4 py-2 text-white transition hover:bg-[#3f56e5]"
-            >
-              Open App
+            <a href="/app" className="rounded-md bg-[#4b64f5] px-4 py-2 text-white transition hover:bg-[#3f56e5]">
+              Open Web App
             </a>
           </nav>
           <a
             href="/app"
             className="inline-flex rounded-md bg-[#4b64f5] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#3f56e5] md:hidden"
           >
-            Open
+            Open App
           </a>
         </div>
       </header>
@@ -111,46 +111,42 @@ export function LandingPage(): React.JSX.Element {
             <div className="mt-7 flex flex-wrap gap-3">
               <a
                 href="/app"
-                className="inline-flex min-w-[150px] items-center justify-center rounded-md bg-[#4b64f5] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#3f56e5]"
+                className="inline-flex min-w-[180px] items-center justify-center rounded-md border border-[#c7d5f4] bg-white px-6 py-3 text-sm font-semibold text-[#2e456a] transition hover:bg-[#f5f8ff]"
               >
-                Launch Workspace
+                Use in Browser
+              </a>
+            </div>
+
+            <div id="downloads" className="mt-3 flex flex-wrap gap-3">
+              <a
+                href="/downloads/notenova-windows.exe"
+                download
+                className="inline-flex min-w-[180px] items-center justify-center rounded-md bg-[#2f5792] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#284c7f]"
+              >
+                Download for Windows
               </a>
               <a
-                href="/keyboard-shortcuts"
-                className="inline-flex min-w-[150px] items-center justify-center rounded-md border border-[#c7d5f4] bg-white px-6 py-3 text-sm font-semibold text-[#2e456a] transition hover:bg-[#f5f8ff]"
+                href="/downloads/notenova-linux.AppImage"
+                download
+                className="inline-flex min-w-[180px] items-center justify-center rounded-md bg-[#2f5792] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#284c7f]"
               >
-                Keyboard Shortcuts
+                Download for Linux
+              </a>
+              <a
+                href="/downloads/notenova-macos.dmg"
+                download
+                className="inline-flex min-w-[180px] items-center justify-center rounded-md bg-[#2f5792] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#284c7f]"
+              >
+                Download for macOS
               </a>
             </div>
 
             <div className="mt-6 rounded-xl border border-[#c5d5f5] bg-white/80 p-4">
-              <p className="text-sm font-semibold text-[#2e466f]">Desktop Downloads</p>
+              <p className="text-sm font-semibold text-[#2e466f]">Install Guide</p>
               <p className="mt-1 text-xs text-[#5b7397]">
-                Local test links. Replace these files with real installers in production.
+                Use /app instantly in browser, or download the installer for your OS to use the
+                desktop application locally.
               </p>
-              <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                <a
-                  href="/downloads/notenova-windows.exe"
-                  download
-                  className="inline-flex items-center justify-center rounded-md bg-[#2f5792] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#284c7f]"
-                >
-                  Download for Windows
-                </a>
-                <a
-                  href="/downloads/notenova-linux.AppImage"
-                  download
-                  className="inline-flex items-center justify-center rounded-md bg-[#2f5792] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#284c7f]"
-                >
-                  Download for Linux
-                </a>
-                <a
-                  href="/downloads/notenova-macos.dmg"
-                  download
-                  className="inline-flex items-center justify-center rounded-md bg-[#2f5792] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#284c7f]"
-                >
-                  Download for macOS
-                </a>
-              </div>
             </div>
 
             <div className="mt-8 grid gap-2 sm:grid-cols-2">
@@ -168,19 +164,23 @@ export function LandingPage(): React.JSX.Element {
           <div className="rounded-2xl border border-[#ccdaf8] bg-white p-4 shadow-[0_20px_45px_rgba(21,39,72,0.14)]">
             <div className="mb-3 flex items-center justify-between px-1">
               <p className="text-xs font-semibold tracking-[0.1em] text-[#3d547a] uppercase">
-                Live Application View
+                Cross-Platform Workspace
               </p>
               <span className="rounded bg-[#e5ecff] px-2 py-1 text-[11px] font-semibold text-[#3456cd]">
-                /app
+                Web + Windows / Linux / macOS
               </span>
             </div>
-            <div className="overflow-hidden rounded-xl border border-[#d4e0f6] bg-[#f2f6ff]">
-              <iframe
-                title="NoteNova Studio App Preview"
-                src="/app"
-                loading="lazy"
-                className="h-[430px] w-full bg-white md:h-[500px]"
-              />
+            <div className="rounded-xl border border-[#d4e0f6] bg-[linear-gradient(180deg,#f7f9ff_0%,#eef3ff_100%)] p-5">
+              <p className="text-sm leading-7 text-[#3f567b]">
+                You can open the full editor in browser at /app or install NoteNova on your local
+                machine for desktop workflow.
+              </p>
+              <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-[#4b6286]">
+                <li>Instant usage in browser without installation</li>
+                <li>Rich note editing with keyboard shortcuts</li>
+                <li>Folder/tag organization with fast filtering</li>
+                <li>Autosave, version restore, export and print</li>
+              </ul>
             </div>
           </div>
         </div>
@@ -277,7 +277,7 @@ export function LandingPage(): React.JSX.Element {
               href="/app"
               className="inline-flex min-w-[150px] items-center justify-center rounded-md bg-[#4b64f5] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#3f56e5]"
             >
-              Open NoteNova
+              Open Web App
             </a>
             <a
               href="/privacy"
@@ -293,8 +293,8 @@ export function LandingPage(): React.JSX.Element {
         <div className="mx-auto flex w-full max-w-[1220px] flex-col gap-4 px-5 py-8 text-sm md:flex-row md:items-center md:justify-between">
           <p>Copyright {new Date().getFullYear()} NoteNova Studio. All rights reserved.</p>
           <div className="flex items-center gap-4 text-xs">
-            <a href="/app" className="transition hover:text-white">
-              App
+            <a href="#downloads" className="transition hover:text-white">
+              Downloads
             </a>
             <a href="/keyboard-shortcuts" className="transition hover:text-white">
               Shortcuts
