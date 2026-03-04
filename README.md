@@ -1,4 +1,4 @@
-# NoteNova Studio (`note-desktop-app`)
+# NoteNova Studio (`note-desktop-app`) sfsdf
 
 Professional hybrid note application for:
 
