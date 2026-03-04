@@ -54,6 +54,26 @@ const featureHighlights = [
   'Quick command palette'
 ] as const
 
+const DEFAULT_RELEASE_BASE_URL = 'https://github.com/mahabur-rahman/note-desktop-app/releases/latest/download'
+
+const downloadLinks = {
+  windows:
+    import.meta.env.VITE_DOWNLOAD_WINDOWS_URL ||
+    (import.meta.env.DEV
+      ? '/downloads/notenova-windows.exe'
+      : `${DEFAULT_RELEASE_BASE_URL}/notenova-windows.exe`),
+  linux:
+    import.meta.env.VITE_DOWNLOAD_LINUX_URL ||
+    (import.meta.env.DEV
+      ? '/downloads/notenova-linux.AppImage'
+      : `${DEFAULT_RELEASE_BASE_URL}/notenova-linux.AppImage`),
+  macos:
+    import.meta.env.VITE_DOWNLOAD_MACOS_URL ||
+    (import.meta.env.DEV
+      ? '/downloads/notenova-macos.dmg'
+      : `${DEFAULT_RELEASE_BASE_URL}/notenova-macos.dmg`)
+} as const
+
 export function LandingPage(): React.JSX.Element {
   return (
     <main
@@ -119,22 +139,19 @@ export function LandingPage(): React.JSX.Element {
 
             <div id="downloads" className="mt-3 flex flex-wrap gap-3">
               <a
-                href="/downloads/notenova-windows.exe"
-                download
+                href={downloadLinks.windows}
                 className="inline-flex min-w-[180px] items-center justify-center rounded-md bg-[#2f5792] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#284c7f]"
               >
                 Download for Windows
               </a>
               <a
-                href="/downloads/notenova-linux.AppImage"
-                download
+                href={downloadLinks.linux}
                 className="inline-flex min-w-[180px] items-center justify-center rounded-md bg-[#2f5792] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#284c7f]"
               >
                 Download for Linux
               </a>
               <a
-                href="/downloads/notenova-macos.dmg"
-                download
+                href={downloadLinks.macos}
                 className="inline-flex min-w-[180px] items-center justify-center rounded-md bg-[#2f5792] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#284c7f]"
               >
                 Download for macOS
