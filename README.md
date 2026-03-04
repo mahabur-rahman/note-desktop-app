@@ -168,13 +168,22 @@ Then open the printed local URL in browser.
 
 ## 6.4 Landing page download button local test
 
-For local testing, three download buttons are wired in landing page:
+Landing download buttons are environment-aware:
 
-1. `Download for Windows` -> `/downloads/notenova-windows.exe`
-2. `Download for Linux` -> `/downloads/notenova-linux.AppImage`
-3. `Download for macOS` -> `/downloads/notenova-macos.dmg`
+1. In development (`npm run dev`), buttons use local files:
+   1. `/downloads/notenova-windows.exe`
+   2. `/downloads/notenova-linux.AppImage`
+   3. `/downloads/notenova-macos.dmg`
+2. In production build, buttons use GitHub latest release assets:
+   1. `.../releases/latest/download/notenova-windows.exe`
+   2. `.../releases/latest/download/notenova-linux.AppImage`
+   3. `.../releases/latest/download/notenova-macos.dmg`
+3. You can override any URL with env vars:
+   1. `VITE_DOWNLOAD_WINDOWS_URL`
+   2. `VITE_DOWNLOAD_LINUX_URL`
+   3. `VITE_DOWNLOAD_MACOS_URL`
 
-Mock files are stored in:
+Local mock files are stored in:
 
 1. `src/renderer/public/downloads/notenova-windows.exe`
 2. `src/renderer/public/downloads/notenova-linux.AppImage`
@@ -187,6 +196,17 @@ npm run dev
 ```
 
 Open landing page, click each button, and verify download starts.
+
+## 6.5 Netlify deployment (web)
+
+1. `netlify.toml` is already configured:
+   1. build command: `npm run build`
+   2. publish directory: `out/renderer`
+   3. SPA redirects for `/app`, `/privacy`, `/keyboard-shortcuts`, and fallback routes
+2. Deploy:
+   1. connect GitHub repo in Netlify, or
+   2. use Netlify Drop with `out/renderer`
+3. For real desktop downloads, publish installer assets in GitHub Releases and verify button links.
 
 ## 7. Script Reference
 

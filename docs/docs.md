@@ -623,10 +623,10 @@ Landing (`/`):
 1. Professional hero + CTA
 2. Live iframe preview of `/app`
 3. Overview, workflow, compatibility sections
-4. Desktop download buttons for:
-   - Windows (`/downloads/notenova-windows.exe`)
-   - Linux (`/downloads/notenova-linux.AppImage`)
-   - macOS (`/downloads/notenova-macos.dmg`)
+4. Desktop download buttons are environment-aware:
+   - Development: local files (`/downloads/notenova-windows.exe`, `/downloads/notenova-linux.AppImage`, `/downloads/notenova-macos.dmg`)
+   - Production: GitHub release assets (`/releases/latest/download/...`) by default
+   - Optional overrides: `VITE_DOWNLOAD_WINDOWS_URL`, `VITE_DOWNLOAD_LINUX_URL`, `VITE_DOWNLOAD_MACOS_URL`
 5. Footer links to app/shortcuts/privacy
 
 Shortcuts page:
@@ -669,6 +669,17 @@ Important output directories:
 
 1. `out/` -> compiled runtime code (main/preload/renderer)
 2. `dist/` -> packaged artifacts (`.AppImage`, `.deb`, `.snap`, etc.)
+
+Netlify web deployment:
+
+1. `netlify.toml` uses:
+   - `command = "npm run build"`
+   - `publish = "out/renderer"`
+2. SPA redirects are defined for:
+   - `/app`
+   - `/keyboard-shortcuts` / `/shortcuts`
+   - `/privacy` / `/privacy-policy`
+   - catch-all fallback to `/index.html`
 
 ## 11. Extension Guide (Where to Add New Features)
 
