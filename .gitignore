@@ -10,3 +10,6 @@ out
 # Local desktop installer files (keep out of git history)
 src/renderer/public/downloads/*
 !src/renderer/public/downloads/.gitkeep
+
+# Local Netlify folder
+.netlify
