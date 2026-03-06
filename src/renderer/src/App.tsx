@@ -75,6 +75,24 @@ function App(): React.JSX.Element {
     }
   }, [activePath, isDesktopApp])
 
+  useEffect(() => {
+    if (isDesktopApp) return
+
+    const appWindow = window as Window & {
+      Tawk_API?: {
+        showWidget?: () => void
+        hideWidget?: () => void
+      }
+    }
+
+    if (activePath === '/') {
+      appWindow.Tawk_API?.showWidget?.()
+      return
+    }
+
+    appWindow.Tawk_API?.hideWidget?.()
+  }, [activePath, isDesktopApp])
+
   if (activePath === '/keyboard-shortcuts' || activePath === '/shortcuts') {
     return <ShortcutsPage />
   }

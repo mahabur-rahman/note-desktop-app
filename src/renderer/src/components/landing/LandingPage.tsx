@@ -1,3 +1,14 @@
+import { useEffect } from 'react'
+
+type TawkApi = {
+  showWidget?: () => void
+  hideWidget?: () => void
+  [key: string]: unknown
+}
+
+const TAWK_SCRIPT_ID = 'tawk-to-script'
+const TAWK_SCRIPT_SRC = 'https://embed.tawk.to/69ab065c4716c51c37026e76/1jj211neg'
+
 const overviewCards = [
   {
     title: 'Focused Writing',
@@ -61,6 +72,46 @@ const downloadLinks = {
 } as const
 
 export function LandingPage(): React.JSX.Element {
+  useEffect(() => {
+    const isDesktopApp = /Electron/i.test(navigator.userAgent)
+    if (isDesktopApp) return
+
+    const appWindow = window as Window & {
+      Tawk_API?: TawkApi
+      Tawk_LoadStart?: Date
+    }
+
+    appWindow.Tawk_API = appWindow.Tawk_API ?? {}
+    appWindow.Tawk_LoadStart = new Date()
+
+    const showWidget = (): void => {
+      appWindow.Tawk_API?.showWidget?.()
+    }
+
+    const existingScript = document.getElementById(TAWK_SCRIPT_ID)
+    if (!existingScript) {
+      const script = document.createElement('script')
+      script.id = TAWK_SCRIPT_ID
+      script.async = true
+      script.src = TAWK_SCRIPT_SRC
+      script.charset = 'UTF-8'
+      script.setAttribute('crossorigin', '*')
+      script.onload = () => {
+        showWidget()
+      }
+
+      const firstScript = document.getElementsByTagName('script')[0]
+      if (firstScript?.parentNode) {
+        firstScript.parentNode.insertBefore(script, firstScript)
+      } else {
+        document.body.appendChild(script)
+      }
+      return
+    }
+
+    showWidget()
+  }, [])
+
   return (
     <main
       className="min-h-screen bg-[linear-gradient(180deg,#f3f7ff_0%,#ecf2ff_34%,#e8f0ff_100%)] text-[#1d2f4e]"
