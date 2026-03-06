@@ -624,8 +624,8 @@ Landing (`/`):
 2. Live iframe preview of `/app`
 3. Overview, workflow, compatibility sections
 4. Desktop download buttons are environment-aware:
-   - Development: local files (`/downloads/notenova-windows.exe`, `/downloads/notenova-linux.AppImage`, `/downloads/notenova-macos.dmg`)
-   - Production: GitHub release assets (`/releases/latest/download/...`) by default
+   - Development: local files (`/downloads/notenova-windows.exe`, `/downloads/notenova-linux.deb`, `/downloads/notenova-macos.dmg`)
+   - Production: release assets (`/releases/latest/download/...`) by default
    - Optional overrides: `VITE_DOWNLOAD_WINDOWS_URL`, `VITE_DOWNLOAD_LINUX_URL`, `VITE_DOWNLOAD_MACOS_URL`
 5. Footer links to app/shortcuts/privacy
 

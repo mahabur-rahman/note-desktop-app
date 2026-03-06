@@ -56,7 +56,7 @@ const featureHighlights = [
 
 const downloadLinks = {
   windows: import.meta.env.VITE_DOWNLOAD_WINDOWS_URL || '/downloads/notenova-windows.exe',
-  linux: import.meta.env.VITE_DOWNLOAD_LINUX_URL || '/downloads/notenova-linux.AppImage',
+  linux: import.meta.env.VITE_DOWNLOAD_LINUX_URL || '/downloads/notenova-linux.deb',
   macos: import.meta.env.VITE_DOWNLOAD_MACOS_URL || '/downloads/notenova-macos.dmg'
 } as const
 

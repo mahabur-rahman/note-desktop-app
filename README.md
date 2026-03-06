@@ -172,11 +172,11 @@ Landing download buttons are environment-aware:
 
 1. In development (`npm run dev`), buttons use local files:
    1. `/downloads/notenova-windows.exe`
-   2. `/downloads/notenova-linux.AppImage`
+   2. `/downloads/notenova-linux.deb`
    3. `/downloads/notenova-macos.dmg`
 2. In production build, buttons use GitHub latest release assets:
    1. `.../releases/latest/download/notenova-windows.exe`
-   2. `.../releases/latest/download/notenova-linux.AppImage`
+   2. `.../releases/latest/download/notenova-linux.deb`
    3. `.../releases/latest/download/notenova-macos.dmg`
 3. You can override any URL with env vars:
    1. `VITE_DOWNLOAD_WINDOWS_URL`
@@ -186,7 +186,7 @@ Landing download buttons are environment-aware:
 Local mock files are stored in:
 
 1. `src/renderer/public/downloads/notenova-windows.exe`
-2. `src/renderer/public/downloads/notenova-linux.AppImage`
+2. `src/renderer/public/downloads/notenova-linux.deb`
 3. `src/renderer/public/downloads/notenova-macos.dmg`
 
 To test:
