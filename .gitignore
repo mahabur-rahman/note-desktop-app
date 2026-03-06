@@ -10,6 +10,14 @@ out
 # Local desktop installer files (keep out of git history)
 src/renderer/public/downloads/*
 !src/renderer/public/downloads/.gitkeep
+*.AppImage
+*.deb
+*.snap
+*.dmg
+*.exe
+*.msi
+*.blockmap
+latest-*.yml
 
 # Local Netlify folder
 .netlify
